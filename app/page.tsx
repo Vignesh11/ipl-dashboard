@@ -282,7 +282,24 @@ function StandingsTab() {
    TAB 3 – Medals
    ═══════════════════════════════════════════ */
 function MedalsTab() {
-  const sorted = [...medalTable].sort(
+  const { matches, loading } = useLiveMatches();
+
+  if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading medals…</p>;
+
+  // Calculate medals from live match data
+  const medalData = PLAYER_LIST.map((name) => {
+    let gold = 0, silver = 0, bronze = 0, consolation = 0;
+    matches.forEach((m) => {
+      const amt = m.winnings?.[name] || 0;
+      if (amt >= 1500) gold++;
+      else if (amt >= 1000) silver++;
+      else if (amt >= 500) bronze++;
+      else if (amt > 0) consolation++;
+    });
+    return { name, gold, silver, bronze, consolation, total: gold + silver + bronze + consolation };
+  });
+
+  const sorted = medalData.sort(
     (a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze || b.total - a.total,
   );
 
