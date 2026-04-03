@@ -31,6 +31,8 @@ function MatchesTab() {
   if (loading) return <div className="text-center text-blue-400/50 py-10">Loading...</div>;
   if (matches.length === 0) return <div className="text-center text-blue-400/50 py-10">No matches yet</div>;
 
+  const reversed = [...matches].reverse(); // newest first
+
   function getPrizeEmoji(amt: number) {
     if (amt >= 1500) return "🥇";
     if (amt >= 1000) return "🥈";
@@ -41,7 +43,7 @@ function MatchesTab() {
 
   return (
     <div className="space-y-4">
-      {matches.map((m) => {
+      {reversed.map((m) => {
         const winners = PLAYERS
           .filter((p) => (m.winnings?.[p] || 0) > 0)
           .sort((a, b) => (m.winnings[b] || 0) - (m.winnings[a] || 0));
@@ -84,13 +86,13 @@ function MatchesTab() {
 
 // ===== Tab 2: Standings 2026 (Live) =====
 function StandingsTab() {
-  const { players, loading, totalMatches, totalInvested } = useLiveSeasonData();
+  const { players, loading, totalMatches, completedMatches, totalInvested } = useLiveSeasonData();
 
   if (loading) return <div className="text-center text-blue-400/50 py-10">Loading live data...</div>;
   if (players.length === 0 || totalMatches === 0)
     return <div className="text-center text-blue-400/50 py-10">No match data yet.</div>;
 
-  const invested = totalInvested; // calculated from actual pot values
+  const invested = totalInvested;
   const enriched = players.map((p) => {
     const totalReturn = p.matchWinnings.reduce((a, b) => a + b, 0);
     const profit = totalReturn - invested;
@@ -101,7 +103,7 @@ function StandingsTab() {
 
   return (
     <div className="space-y-3">
-      <div className="text-center text-xs text-blue-400/40 mb-2">{totalMatches} matches played • ₹{formatNum(invested)} invested per player</div>
+      <div className="text-center text-xs text-blue-400/40 mb-2">{completedMatches} matches completed • ₹{formatNum(invested)} invested per player</div>
       {sorted.map((p, i) => {
         const rank = i + 1;
         const barWidth = Math.max(2, (p.totalReturn / maxReturn) * 100);

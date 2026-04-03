@@ -18,6 +18,7 @@ export function useLiveSeasonData() {
   const [players, setPlayers] = useState<PlayerLive[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalMatches, setTotalMatches] = useState(0);
+  const [completedMatches, setCompletedMatches] = useState(0);
   const [totalInvested, setTotalInvested] = useState(0);
 
   useEffect(() => {
@@ -36,13 +37,20 @@ export function useLiveSeasonData() {
 
       setTotalMatches(maxMatch);
 
-      // Calculate total invested: sum of (betAmount / numPlayers) for each match
+      // Calculate total invested: sum of (betAmount / numPlayers) for each match WITH results
       let invested = 0;
+      let completedMatches = 0;
       for (let i = 1; i <= maxMatch; i++) {
-        if (matchBets[i]) {
-          invested += Math.floor(matchBets[i] / PLAYERS.length);
+        if (matchBets[i] && matchData[i]) {
+          const hasWinners = Object.values(matchData[i]).some((v) => v > 0);
+          if (hasWinners) {
+            invested += Math.floor(matchBets[i] / PLAYERS.length);
+            completedMatches++;
+          }
         }
       }
+      setTotalMatches(maxMatch);
+      setCompletedMatches(completedMatches);
       setTotalInvested(invested);
 
       const result: PlayerLive[] = PLAYERS.map((name) => {
@@ -60,7 +68,7 @@ export function useLiveSeasonData() {
     return () => unsub();
   }, []);
 
-  return { players, loading, totalMatches, totalInvested };
+  return { players, loading, totalMatches, completedMatches, totalInvested };
 }
 
 export interface MatchLive {
