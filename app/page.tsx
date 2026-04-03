@@ -44,12 +44,12 @@ function MatchesTab() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Upcoming = no winners yet
+  // Upcoming = no winners yet, sorted by match number ascending
   const upcomingGames = reversed
     .filter((m) => !hasWinners(m))
-    .sort((a, b) => (a.matchDate || "").localeCompare(b.matchDate || ""));
+    .sort((a, b) => a.matchNum - b.matchNum);
   const todaysGames = upcomingGames.filter((m) => m.matchDate === today);
-  const otherUpcoming = upcomingGames.filter((m) => m.matchDate && m.matchDate !== today);
+  const otherUpcoming = upcomingGames.filter((m) => m.matchDate && m.matchDate !== today && (m.contestCode || m.contestLink));
   const completedGames = reversed.filter((m) => hasWinners(m));
 
   function getPrizeEmoji(amt: number) {
