@@ -2,13 +2,15 @@
 import { useState, useEffect, useRef } from "react";
 import { medalTable, allTimeWinnings, combinedPodiums } from "./data";
 import { useLiveSeasonData, useLiveMatches } from "./useFirestore";
+import { db } from "./firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts";
 
 /* ───── constants ───── */
-const TABS = ["🏏 Season 2026", "📊 Standings 2026", "🏅 Medals 2026", "🏆 All-Time"] as const;
+const TABS = ["🏏 Season 2026", "📊 Standings 2026", "🏅 Medals 2026", "🏆 All-Time", "🎲 Guess Game"] as const;
 
 const PLAYER_LIST = [
   "Harsha","Vignesh","Sidhu","Jaydev","Aditya","Karthik",
@@ -415,6 +417,66 @@ function AllTimeTab() {
 
 
 /* ═══════════════════════════════════════════
+   TAB 5 – Guess Game
+   ═══════════════════════════════════════════ */
+function GuessGameTab() {
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "guessGame", "scores"), (snap) => {
+      if (snap.exists()) {
+        setScores(snap.data().points as Record<string, number>);
+      }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading…</p>;
+
+  const GUESS_PLAYERS = [
+    "Shiva", "Aditya", "Ankit", "Varun", "Harsha", "Manju",
+    "Ravi", "Rohit", "Siddhu", "Sivakarthik", "Sugam", "Vinay",
+    "Ranjeeth", "Sreeram", "Vignesh", "Pruthvi", "Jay",
+  ];
+
+  const sorted = GUESS_PLAYERS
+    .map((p) => ({ name: p, points: scores[p] || 0, seed: p }))
+    .sort((a, b) => b.points - a.points);
+
+  return (
+    <div className="space-y-6">
+      {/* Leaderboard */}
+      <div>
+        <h3 className="text-sky-300 font-semibold mb-3">🎲 Team Bawa Prediction League</h3>
+        <div className="space-y-1.5">
+          {sorted.map((p, i) => {
+            const rank = i + 1;
+            return (
+              <div key={p.name} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                rank <= 3 ? "bg-slate-800/40" : "bg-slate-800/20"
+              }`}>
+                <span className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold shrink-0 ${
+                  rank === 1 ? "bg-yellow-500 text-black" : rank === 2 ? "bg-gray-400 text-black" : rank === 3 ? "bg-amber-700 text-white" : "bg-slate-700 text-slate-400"
+                }`}>{rank}</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.seed}&backgroundColor=b6e3f4,c0aede`} alt={p.name}
+                  className="w-8 h-8 rounded-full bg-slate-700 shrink-0" />
+                <span className="flex-1 text-sm text-sky-100">{p.name}</span>
+                <span className="text-sm font-bold text-sky-300">{p.points} <span className="text-xs text-slate-500">PTS</span></span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Daily Questions removed */}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    MAIN – Home
    ═══════════════════════════════════════════ */
 export default function Home() {
@@ -455,6 +517,7 @@ export default function Home() {
           {tab === 1 && <StandingsTab />}
           {tab === 2 && <MedalsTab />}
           {tab === 3 && <AllTimeTab />}
+        {tab === 4 && <GuessGameTab />}
         </main>
 
         <div className="text-center pb-8">

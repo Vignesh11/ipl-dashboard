@@ -155,3 +155,54 @@ export const combinedPodiums: PodiumEntry[] = [
   { rank: 24, name: "Guru", y2025: null, y2024: null, y2023: null, y2022: null, y2021: null, y2020: 3, total: 3, avg: 3.0 },
   { rank: 25, name: "Sai", y2025: null, y2024: null, y2023: null, y2022: null, y2021: 2, y2020: null, total: 2, avg: 2.0 },
 ];
+
+// ===== Prediction League =====
+export interface PredictionPlayer {
+  name: string;
+  points: number;
+  seed: string;
+}
+
+export interface PredictionQuestion {
+  question: string;
+  options: string[];
+}
+
+export interface DailyPrediction {
+  date: string;
+  matchLabel: string;
+  questions: PredictionQuestion[];
+}
+
+export const predictionPlayers: PredictionPlayer[] = [
+  { name: "Shiva", points: 100, seed: "Shiva" },
+  { name: "Aditya", points: 0, seed: "Aditya" },
+  { name: "Ankit", points: 0, seed: "Ankit" },
+  { name: "Varun", points: 0, seed: "Varun" },
+  { name: "Harsha", points: 0, seed: "Harsha" },
+  { name: "Manju", points: 0, seed: "Manju" },
+  { name: "Ravi", points: 0, seed: "Ravi" },
+  { name: "Rohit", points: 0, seed: "Rohit" },
+  { name: "Siddhu", points: 0, seed: "Siddhu" },
+  { name: "Sivakarthik", points: 0, seed: "Sivakarthik" },
+  { name: "Sugam", points: 0, seed: "Sugam" },
+  { name: "Vinay", points: 0, seed: "Vinay" },
+  { name: "Ranjeeth", points: 0, seed: "Ranjeeth" },
+  { name: "Sreeram", points: 0, seed: "Sreeram" },
+  { name: "Vignesh", points: 0, seed: "Vignesh" },
+  { name: "Pruthvi", points: 0, seed: "Pruthvi" },
+  { name: "Jay", points: 0, seed: "Jay" },
+];
+
+export const dailyPredictions: DailyPrediction[] = [
+  {
+    date: "Apr 3, 2026",
+    matchLabel: "Match 7 • CSK vs PBKS",
+    questions: [
+      {
+        question: "How many extras in the game? (Both innings combined)",
+        options: ["10 and below", "11-15", "15-20", "20-25", "Above 25"],
+      },
+    ],
+  },
+];
