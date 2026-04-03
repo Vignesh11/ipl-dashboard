@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "IPL Stats Dashboard",
-  description: "IPL Auction League Stats — 2020 to 2026",
+  description: "IPL Auction League Stats — Since 2020",
 };
 
 export default function RootLayout({

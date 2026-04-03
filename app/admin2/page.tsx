@@ -19,6 +19,8 @@ export default function Admin2Page() {
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [matchLabel, setMatchLabel] = useState("");
+  const [matchNum, setMatchNum] = useState(1);
+  const [twister, setTwister] = useState(false);
 
   // Load current scores from Firestore
   useEffect(() => {
@@ -65,22 +67,33 @@ export default function Admin2Page() {
     try {
       const updated = { ...scores };
       PLAYERS.forEach((p) => { if (!updated[p]) updated[p] = 0; });
-      selected.forEach((p) => { updated[p] = (updated[p] || 0) + 100; });
+      if (twister) {
+        // Twister: winners +200, losers -100
+        selected.forEach((p) => { updated[p] = (updated[p] || 0) + 200; });
+        PLAYERS.filter((p) => !selected.includes(p)).forEach((p) => { updated[p] = (updated[p] || 0) - 100; });
+      } else {
+        // Normal: winners +100
+        selected.forEach((p) => { updated[p] = (updated[p] || 0) + 100; });
+      }
 
       // Save updated scores
       await setDoc(doc(db, "guessGame", "scores"), { points: updated });
 
       // Save this round's history
-      const histRef = doc(db, "guessGame", `round_${Date.now()}`);
+      const histRef = doc(db, "guessGame", `round_${matchNum}_${Date.now()}`);
       await setDoc(histRef, {
+        matchNum,
         date: matchLabel || new Date().toISOString().split("T")[0],
         winners: selected,
-        pointsAwarded: 100,
+        twister,
+        pointsAwarded: twister ? 200 : 100,
+        pointsDeducted: twister ? -100 : 0,
         timestamp: new Date().toISOString(),
       });
 
-      setMessage(`✅ +100 pts to: ${selected.join(", ")}`);
+      setMessage(`✅ Match ${matchNum}${twister ? " 🌀TWISTER" : ""}: ${twister ? "+200/-100" : "+100"} → ${selected.join(", ")}`);
       setSelected([]);
+      setMatchNum((n) => n + 1);
       setMatchLabel("");
     } catch (err) {
       setMessage(`❌ Error: ${err}`);
@@ -99,17 +112,35 @@ export default function Admin2Page() {
 
         {/* Match info */}
         <div className="bg-blue-950/40 border border-blue-800/25 rounded-xl p-4 mb-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-blue-400/60 block mb-1">Match #</label>
+              <input type="number" min={1} value={matchNum}
+                onChange={(e) => setMatchNum(parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 text-center" />
+            </div>
             <div>
               <label className="text-xs text-blue-400/60 block mb-1">Date</label>
               <input type="date" value={matchLabel || new Date().toISOString().split("T")[0]}
                 onChange={(e) => setMatchLabel(e.target.value)}
                 className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 text-center" />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end pb-1">
               <span className="text-xs text-blue-400/40">{selected.length} winner{selected.length !== 1 ? "s" : ""} selected</span>
             </div>
           </div>
+        </div>
+
+        {/* Twister toggle */}
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <button onClick={() => setTwister(!twister)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              twister
+                ? "bg-red-600/30 border border-red-500/40 text-red-300 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                : "bg-blue-900/20 border border-blue-700/20 text-blue-400/50"
+            }`}>
+            {twister ? "🌀 TWISTER ON — Winners +200 / Losers -100" : "🌀 Twister Off — Normal +100"}
+          </button>
         </div>
 
         {/* Player selection */}
@@ -138,7 +169,7 @@ export default function Admin2Page() {
         <div className="flex items-center gap-3 justify-center">
           <button onClick={handleSave} disabled={saving}
             className="px-6 py-2 bg-sky-600 hover:bg-sky-500 disabled:bg-sky-800 text-white font-semibold rounded-lg transition-colors">
-            {saving ? "Saving..." : "Award +100 pts"}
+            {saving ? "Saving..." : twister ? "🌀 Award Twister" : "Award +100 pts"}
           </button>
         </div>
         {message && (
