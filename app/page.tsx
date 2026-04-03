@@ -255,10 +255,10 @@ function StandingsTab() {
                 <span className="font-medium text-sky-100 flex-1">{p.name}</span>
                 <span className="text-xs text-slate-400">In-Points: ₹{formatNum(invested)}</span>
               </div>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm justify-center">
                 <span className="text-sky-300">₹{formatNum(p.total)}</span>
                 <span className={p.profit >= 0 ? "text-emerald-400" : "text-red-400"}>
-                  {p.profit >= 0 ? "+" : ""}₹{formatNum(Math.abs(p.profit))}
+                  {p.profit >= 0 ? "+" : "-"}₹{formatNum(Math.abs(p.profit))}
                 </span>
               </div>
               {/* Progress bar */}
@@ -413,43 +413,46 @@ export default function Home() {
   const [tab, setTab] = useState<number>(0);
 
   return (
-    <main className="min-h-screen bg-[#0a1628] text-white">
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Header */}
-        <h1 className="text-center text-2xl font-bold text-sky-300 mb-4">
-          🏏 IPL Fantasy League
-        </h1>
+    <div className="min-h-screen bg-[#0a1628] text-blue-100 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
+        style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 80px, #3b82f6 80px, #3b82f6 82px)" }} />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/5 rounded-full blur-[150px] pointer-events-none" />
 
-        {/* Tab bar */}
-        <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
-          {TABS.map((label, i) => (
-            <button
-              key={label}
-              onClick={() => setTab(i)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                tab === i
-                  ? "bg-sky-600 text-white shadow-lg shadow-sky-600/20"
-                  : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="relative z-10">
+        <header className="text-center pt-8 pb-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-300 to-sky-400">
+            🏏 IPL Stats Dashboard
+          </h1>
+          <p className="text-xs text-blue-400/40 mt-1">Auction League • 2020–2026</p>
+        </header>
 
-        {/* Tab content */}
-        {tab === 0 && <SeasonTab />}
-        {tab === 1 && <StandingsTab />}
-        {tab === 2 && <MedalsTab />}
-        {tab === 3 && <AllTimeTab />}
+        <nav className="max-w-3xl mx-auto px-4 mb-6">
+          <div className="flex gap-1 bg-blue-950/50 rounded-xl p-1 border border-blue-800/20">
+            {TABS.map((label, i) => (
+              <button key={label} onClick={() => setTab(i)}
+                className={`flex-1 py-2 px-1 text-[10px] md:text-sm font-semibold rounded-lg transition-all ${
+                  tab === i
+                    ? "bg-blue-700/30 text-sky-200 shadow-[0_0_10px_rgba(56,189,248,0.12)]"
+                    : "text-blue-400/50 hover:text-sky-300 hover:bg-blue-900/20"
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
 
-        {/* Admin link */}
-        <div className="mt-12 text-center">
-          <a href="/admin" className="text-blue-600/30 hover:text-blue-500/50 transition-colors text-sm">
-            ⚙️
-          </a>
+        <main className="max-w-3xl mx-auto px-4 pb-16">
+          {tab === 0 && <SeasonTab />}
+          {tab === 1 && <StandingsTab />}
+          {tab === 2 && <MedalsTab />}
+          {tab === 3 && <AllTimeTab />}
+        </main>
+
+        <div className="text-center pb-8">
+          <a href="/admin" className="text-blue-600/30 hover:text-blue-400/50 text-xs transition-colors">⚙️</a>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
