@@ -1,0 +1,54 @@
+"use client";
+import { useState, useEffect } from "react";
+import { db } from "./firebase";
+import { collection, onSnapshot } from "firebase/firestore";
+
+export interface PlayerLive {
+  name: string;
+  matchWinnings: number[]; // indexed by match (0 = match 1)
+}
+
+const PLAYERS = [
+  "Harsha", "Vignesh", "Sidhu", "Jaydev", "Aditya", "Karthik",
+  "Sreeram", "Manju", "Anoop", "Ravindra", "Ankit", "Prithvi",
+  "Ranjith", "Shashi", "Shiva", "Vinay (Babu)",
+];
+
+export function useLiveSeasonData() {
+  const [players, setPlayers] = useState<PlayerLive[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalMatches, setTotalMatches] = useState(0);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "matches"), (snap) => {
+      // Build match data: { matchNum: { player: winnings } }
+      const matchData: Record<number, Record<string, number>> = {};
+      let maxMatch = 0;
+
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        const num = data.matchNum as number;
+        matchData[num] = data.winnings as Record<string, number>;
+        if (num > maxMatch) maxMatch = num;
+      });
+
+      setTotalMatches(maxMatch);
+
+      // Build player arrays
+      const result: PlayerLive[] = PLAYERS.map((name) => {
+        const winnings: number[] = [];
+        for (let i = 1; i <= maxMatch; i++) {
+          winnings.push(matchData[i]?.[name] || 0);
+        }
+        return { name, matchWinnings: winnings };
+      });
+
+      setPlayers(result);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  return { players, loading, totalMatches };
+}

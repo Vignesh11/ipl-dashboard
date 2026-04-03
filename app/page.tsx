@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { currentSeason, medalTable, allTimeWinnings, cumulativeGraph2026, combinedPodiums } from "./data";
+import { medalTable, allTimeWinnings, cumulativeGraph2026, combinedPodiums } from "./data";
+import { useLiveSeasonData } from "./useFirestore";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, Cell,
@@ -19,10 +20,16 @@ function formatNum(n: number) {
   return n.toLocaleString("en-IN");
 }
 
-// ===== Tab 1: Season 2026 =====
+// ===== Tab 1: Season 2026 (Live from Firestore) =====
 function SeasonTab() {
+  const { players, loading } = useLiveSeasonData();
   const BET_PER_MATCH = 200;
-  const enriched = currentSeason.map((p) => {
+
+  if (loading) return <div className="text-center text-blue-400/50 py-10">Loading live data...</div>;
+  if (players.length === 0 || players.every((p) => p.matchWinnings.length === 0))
+    return <div className="text-center text-blue-400/50 py-10">No match data yet. Admin needs to enter results.</div>;
+
+  const enriched = players.map((p) => {
     const matches = p.matchWinnings.length;
     const invested = matches * BET_PER_MATCH;
     const totalReturn = p.matchWinnings.reduce((a, b) => a + b, 0);
