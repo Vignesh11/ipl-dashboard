@@ -98,18 +98,13 @@ function SeasonTab() {
               >
                 <div className="flex justify-between items-start">
                   <span className="font-medium text-sky-100">M{m.matchNum}: {m.matchInfo}</span>
-                  {(m.contestCode || m.contestLink) && (
-                    <span className="text-xs text-sky-400/80">
-                      {m.contestLink ? (
-                        <a href={m.contestLink} target="_blank" rel="noreferrer" className="underline">
-                          Contest ↗
-                        </a>
-                      ) : (
-                        <>Code: {m.contestCode}</>
-                      )}
-                    </span>
-                  )}
                 </div>
+                {(m.contestCode || m.contestLink) && (
+                  <div className="flex items-center gap-2 mt-1">
+                    {m.contestCode && <span className="text-xs bg-sky-800/40 text-sky-200 px-2 py-0.5 rounded font-mono">Code: {m.contestCode}</span>}
+                    {m.contestLink && <a href={m.contestLink} target="_blank" rel="noreferrer" className="text-xs text-sky-400/80 underline">Contest ↗</a>}
+                  </div>
+                )}
                 {renderWinners(m)}
               </div>
             ))}
@@ -133,15 +128,10 @@ function SeasonTab() {
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   {(m.contestCode || m.contestLink) && (
-                    <span className="text-xs text-blue-400/70">
-                      {m.contestLink ? (
-                        <a href={m.contestLink} target="_blank" rel="noreferrer" className="underline">
-                          Contest ↗
-                        </a>
-                      ) : (
-                        <>Code: {m.contestCode}</>
-                      )}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {m.contestCode && <span className="text-xs bg-blue-800/30 text-sky-300 px-2 py-0.5 rounded font-mono">Code: {m.contestCode}</span>}
+                      {m.contestLink && <a href={m.contestLink} target="_blank" rel="noreferrer" className="text-xs text-blue-400/70 underline">Contest ↗</a>}
+                    </div>
                   )}
                   <span className="text-xs text-blue-300/50">Upcoming</span>
                 </div>
