@@ -52,3 +52,27 @@ export function useLiveSeasonData() {
 
   return { players, loading, totalMatches };
 }
+
+export interface MatchLive {
+  matchNum: number;
+  matchInfo: string;
+  betAmount: number;
+  winnings: Record<string, number>;
+}
+
+export function useLiveMatches() {
+  const [matches, setMatches] = useState<MatchLive[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "matches"), (snap) => {
+      const data = snap.docs.map((d) => d.data() as MatchLive);
+      data.sort((a, b) => a.matchNum - b.matchNum);
+      setMatches(data);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  return { matches, loading };
+}

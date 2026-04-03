@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import { medalTable, allTimeWinnings, cumulativeGraph2026, combinedPodiums } from "./data";
-import { useLiveSeasonData } from "./useFirestore";
+import { useLiveSeasonData, useLiveMatches } from "./useFirestore";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, Cell,
 } from "recharts";
 
-const TABS = ["🏏 Season 2026", "🏅 Medals", "🏆 All-Time", "📈 Graphs"] as const;
+const TABS = ["🏏 Season 2026", "🏅 Medals", "🏆 All-Time", "📈 Graphs", "📋 Matches"] as const;
 type Tab = (typeof TABS)[number];
 
 const COLORS = [
@@ -251,6 +251,63 @@ function GraphsTab() {
   );
 }
 
+// ===== Tab 5: Matches Overview =====
+function MatchesTab() {
+  const { matches, loading } = useLiveMatches();
+  const PLAYERS = [
+    "Harsha", "Vignesh", "Sidhu", "Jaydev", "Aditya", "Karthik",
+    "Sreeram", "Manju", "Anoop", "Ravindra", "Ankit", "Prithvi",
+    "Ranjith", "Shashi", "Shiva", "Vinay (Babu)",
+  ];
+
+  if (loading) return <div className="text-center text-blue-400/50 py-10">Loading...</div>;
+  if (matches.length === 0) return <div className="text-center text-blue-400/50 py-10">No matches yet</div>;
+
+  function getPrizeEmoji(amt: number) {
+    if (amt >= 1500) return "🥇";
+    if (amt >= 1000) return "🥈";
+    if (amt >= 500) return "🥉";
+    if (amt > 0) return "🎖️";
+    return "";
+  }
+
+  return (
+    <div className="space-y-4">
+      {matches.map((m) => {
+        const winners = PLAYERS
+          .filter((p) => (m.winnings?.[p] || 0) > 0)
+          .sort((a, b) => (m.winnings[b] || 0) - (m.winnings[a] || 0));
+        return (
+          <div key={m.matchNum} className="bg-blue-950/40 border border-blue-800/25 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 bg-blue-900/25 border-b border-blue-800/25 flex items-center justify-between">
+              <div>
+                <span className="text-sm font-bold text-sky-300">Match {m.matchNum}</span>
+                {m.matchInfo && <span className="text-xs text-blue-400/40 ml-2">{m.matchInfo}</span>}
+              </div>
+              <span className="text-xs text-blue-400/40">₹{formatNum(m.betAmount)}</span>
+            </div>
+            <div className="p-3">
+              {winners.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {winners.map((w) => (
+                    <div key={w} className="flex items-center gap-1.5 bg-blue-900/20 rounded-lg px-3 py-1.5">
+                      <span className="text-sm">{getPrizeEmoji(m.winnings[w])}</span>
+                      <span className="text-sm text-blue-100">{w}</span>
+                      <span className="text-xs text-emerald-400/70">₹{formatNum(m.winnings[w])}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-blue-500/30">No winners recorded</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ===== Main Page =====
 export default function Home() {
   const [tab, setTab] = useState<Tab>(TABS[0]);
@@ -294,6 +351,7 @@ export default function Home() {
           {tab === TABS[1] && <MedalsTab />}
           {tab === TABS[2] && <AllTimeTab />}
           {tab === TABS[3] && <GraphsTab />}
+          {tab === TABS[4] && <MatchesTab />}
         </main>
       </div>
     </div>
