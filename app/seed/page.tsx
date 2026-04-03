@@ -7,7 +7,8 @@ import { doc, setDoc } from "firebase/firestore";
 const SEED_DATA = [
   {
     matchNum: 1,
-    matchInfo: "Match 1",
+    matchDate: "2026-03-28",
+    matchInfo: "RCB vs SRH",
     betAmount: 3200,
     winners: ["Sreeram", "Ravindra", "Ankit", "Sidhu"],
     winnings: {
@@ -18,7 +19,8 @@ const SEED_DATA = [
   },
   {
     matchNum: 2,
-    matchInfo: "Match 2",
+    matchDate: "2026-03-29",
+    matchInfo: "MI vs KKR",
     betAmount: 3200,
     winners: ["Vignesh", "Harsha", "Manju", "Jaydev"],
     winnings: {
@@ -29,7 +31,8 @@ const SEED_DATA = [
   },
   {
     matchNum: 3,
-    matchInfo: "Match 3",
+    matchDate: "2026-03-30",
+    matchInfo: "RR vs CSK",
     betAmount: 3200,
     winners: ["Harsha", "Anoop", "Manju", "Vignesh"],
     winnings: {
@@ -40,7 +43,8 @@ const SEED_DATA = [
   },
   {
     matchNum: 4,
-    matchInfo: "Match 4",
+    matchDate: "2026-03-31",
+    matchInfo: "PK vs GT",
     betAmount: 3200,
     winners: ["Jaydev", "Aditya", "Karthik", "Manju"],
     winnings: {
@@ -51,7 +55,8 @@ const SEED_DATA = [
   },
   {
     matchNum: 5,
-    matchInfo: "Match 5",
+    matchDate: "2026-04-01",
+    matchInfo: "LSG vs DC",
     betAmount: 3200,
     winners: ["Sidhu", "Karthik", "Aditya", "Harsha"],
     winnings: {
@@ -62,7 +67,8 @@ const SEED_DATA = [
   },
   {
     matchNum: 6,
-    matchInfo: "Match 6",
+    matchDate: "2026-04-02",
+    matchInfo: "KKR vs SRH",
     betAmount: 3200,
     winners: ["Harsha", "Vignesh", "Sidhu", "Prithvi"],
     winnings: {

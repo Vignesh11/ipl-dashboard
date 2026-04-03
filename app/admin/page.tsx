@@ -15,6 +15,7 @@ const PRIZE_OPTIONS = [0, 200, 500, 1000, 1500];
 
 interface MatchData {
   matchNum: number;
+  matchDate: string;
   matchInfo: string;
   betAmount: number;
   contestLink: string;
@@ -34,6 +35,7 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [matchNum, setMatchNum] = useState(7);
+  const [matchDate, setMatchDate] = useState(new Date().toISOString().split("T")[0]);
   const [matchInfo, setMatchInfo] = useState("");
   const [betAmount, setBetAmount] = useState(3200);
   const [contestLink, setContestLink] = useState("");
@@ -58,12 +60,14 @@ export default function AdminPage() {
     getDoc(doc(db, "matches", `match_${matchNum}`)).then((snap) => {
       if (snap.exists()) {
         const data = snap.data() as MatchData;
+        setMatchDate(data.matchDate || new Date().toISOString().split("T")[0]);
         setMatchInfo(data.matchInfo || "");
         setBetAmount(data.betAmount || 3200);
         setContestLink(data.contestLink || "");
         setContestCode(data.contestCode || "");
         setWinnings(data.winnings || initWinnings());
       } else {
+        setMatchDate(new Date().toISOString().split("T")[0]);
         setMatchInfo("");
         setBetAmount(3200);
         setContestLink("");
@@ -98,7 +102,7 @@ export default function AdminPage() {
     setMessage("");
     try {
       await setDoc(doc(db, "matches", `match_${matchNum}`), {
-        matchNum, matchInfo, betAmount, contestLink, contestCode, winners, winnings,
+        matchNum, matchDate, matchInfo, betAmount, contestLink, contestCode, winners, winnings,
         updatedAt: new Date().toISOString(),
       });
       setMessage(`Match ${matchNum} saved!`);
@@ -117,11 +121,17 @@ export default function AdminPage() {
 
         {/* Match setup */}
         <div className="bg-blue-950/40 border border-blue-800/25 rounded-xl p-4 mb-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-blue-400/60 block mb-1">Match #</label>
               <input type="number" min={1} max={74} value={matchNum}
                 onChange={(e) => setMatchNum(parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 text-center" />
+            </div>
+            <div>
+              <label className="text-xs text-blue-400/60 block mb-1">Date</label>
+              <input type="date" value={matchDate}
+                onChange={(e) => setMatchDate(e.target.value)}
                 className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 text-center" />
             </div>
             <div>

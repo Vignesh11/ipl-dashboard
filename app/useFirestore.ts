@@ -73,6 +73,7 @@ export function useLiveSeasonData() {
 
 export interface MatchLive {
   matchNum: number;
+  matchDate: string;
   matchInfo: string;
   betAmount: number;
   contestLink: string;
