@@ -21,12 +21,22 @@ function formatNum(n: number) {
 
 // ===== Tab 1: Season 2026 =====
 function SeasonTab() {
-  const sorted = [...currentSeason].sort((a, b) => b.outPoints - a.outPoints);
+  const BET_PER_MATCH = 200;
+  const enriched = currentSeason.map((p) => {
+    const matches = p.matchWinnings.length;
+    const invested = matches * BET_PER_MATCH;
+    const totalReturn = p.matchWinnings.reduce((a, b) => a + b, 0);
+    const profit = totalReturn - invested;
+    return { ...p, invested, totalReturn, profit };
+  });
+  const maxReturn = Math.max(...enriched.map((p) => p.totalReturn), 1);
+  const sorted = [...enriched].sort((a, b) => b.totalReturn - a.totalReturn);
+
   return (
     <div className="space-y-3">
       {sorted.map((p, i) => {
         const rank = i + 1;
-        const barWidth = Math.max(2, (p.outPoints / 4200) * 100);
+        const barWidth = Math.max(2, (p.totalReturn / maxReturn) * 100);
         return (
           <div key={p.name} className="bg-blue-950/40 border border-blue-800/25 rounded-xl p-4">
             <div className="flex items-center gap-3 mb-2">
@@ -35,12 +45,12 @@ function SeasonTab() {
               }`}>{rank}</span>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-blue-100 truncate">{p.name}</p>
-                <p className="text-xs text-blue-400/40">Return: {p.returnPct}%</p>
+                <p className="text-xs text-blue-400/40">Invested: {formatNum(p.invested)}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-sky-400">{formatNum(p.outPoints)}</p>
-                <p className={`text-xs ${p.balance >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {p.balance >= 0 ? "+" : ""}{formatNum(p.balance)}
+                <p className="font-bold text-sky-400">{formatNum(p.totalReturn)} <span className="text-xs text-blue-400/40">return</span></p>
+                <p className={`text-xs font-semibold ${p.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {p.profit >= 0 ? "+" : ""}{formatNum(p.profit)} profit
                 </p>
               </div>
             </div>
