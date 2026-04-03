@@ -43,10 +43,14 @@ function MatchesTab() {
     PLAYER_LIST.some((p) => (m.winnings?.[p] || 0) > 0);
 
   const today = new Date().toISOString().split("T")[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
-  const todaysGames = reversed.filter((m) => m.matchDate === today);
-  const tomorrowsGames = reversed.filter((m) => m.matchDate === tomorrow && !hasWinners(m));
-  const completedGames = reversed.filter((m) => hasWinners(m) && m.matchDate !== today);
+
+  // Upcoming = no winners yet
+  const upcomingGames = reversed
+    .filter((m) => !hasWinners(m))
+    .sort((a, b) => (a.matchDate || "").localeCompare(b.matchDate || ""));
+  const todaysGames = upcomingGames.filter((m) => m.matchDate === today);
+  const otherUpcoming = upcomingGames.filter((m) => m.matchDate && m.matchDate !== today);
+  const completedGames = reversed.filter((m) => hasWinners(m));
 
   function getPrizeEmoji(amt: number) {
     if (amt >= 1500) return "🥇";
@@ -97,6 +101,40 @@ function MatchesTab() {
                   ) : (
                     <p className="text-sm text-sky-300/60 italic">⏳ Awaiting results...</p>
                   )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming games (not today, no winners yet) */}
+      {otherUpcoming.length > 0 && (
+        <div>
+          <div className="text-xs font-bold text-blue-400/60 uppercase tracking-wider mb-2 mt-4 flex items-center gap-2">
+            📅 Upcoming
+          </div>
+          <div className="space-y-3">
+            {otherUpcoming.map((m) => (
+              <div key={m.matchNum} className="rounded-xl border border-blue-700/30 bg-blue-950/30 overflow-hidden">
+                <div className="px-4 py-3 bg-blue-900/15 border-b border-blue-800/20 flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-blue-200">Match {m.matchNum}</span>
+                    {m.matchInfo && <span className="text-xs text-blue-400/40 ml-2">{m.matchInfo}</span>}
+                  </div>
+                  <div className="text-right">
+                    {m.matchDate && <span className="text-[10px] text-blue-400/30 block">{m.matchDate}</span>}
+                    <span className="text-xs text-blue-400/30">₹{formatNum(m.betAmount)}</span>
+                  </div>
+                </div>
+                {(m.contestLink || m.contestCode) && (
+                  <div className="px-4 py-2 border-b border-blue-800/15 flex items-center gap-3">
+                    {m.contestCode && <span className="text-xs bg-blue-800/30 text-sky-300 px-2 py-0.5 rounded font-mono">Code: {m.contestCode}</span>}
+                    {m.contestLink && <a href={m.contestLink} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 underline">Join Contest →</a>}
+                  </div>
+                )}
+                <div className="p-3">
+                  <p className="text-sm text-blue-400/40 italic">Upcoming</p>
                 </div>
               </div>
             ))}
