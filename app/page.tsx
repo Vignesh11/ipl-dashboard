@@ -43,7 +43,9 @@ function MatchesTab() {
     PLAYER_LIST.some((p) => (m.winnings?.[p] || 0) > 0);
 
   const today = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
   const todaysGames = reversed.filter((m) => m.matchDate === today);
+  const tomorrowsGames = reversed.filter((m) => m.matchDate === tomorrow && !hasWinners(m));
   const completedGames = reversed.filter((m) => hasWinners(m) && m.matchDate !== today);
 
   function getPrizeEmoji(amt: number) {
