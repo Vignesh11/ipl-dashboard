@@ -5,7 +5,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 
 export interface PlayerLive {
   name: string;
-  matchWinnings: number[]; // indexed by match (0 = match 1)
+  matchWinnings: number[];
 }
 
 const PLAYERS = [
@@ -37,20 +37,18 @@ export function useLiveSeasonData() {
 
       setTotalMatches(maxMatch);
 
-      // Calculate total invested: sum of (betAmount / numPlayers) for each match WITH results
       let invested = 0;
-      let completedMatches = 0;
+      let completed = 0;
       for (let i = 1; i <= maxMatch; i++) {
         if (matchBets[i] && matchData[i]) {
           const hasWinners = Object.values(matchData[i]).some((v) => v > 0);
           if (hasWinners) {
             invested += Math.floor(matchBets[i] / PLAYERS.length);
-            completedMatches++;
+            completed++;
           }
         }
       }
-      setTotalMatches(maxMatch);
-      setCompletedMatches(completedMatches);
+      setCompletedMatches(completed);
       setTotalInvested(invested);
 
       const result: PlayerLive[] = PLAYERS.map((name) => {

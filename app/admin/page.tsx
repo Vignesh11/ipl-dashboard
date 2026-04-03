@@ -113,6 +113,26 @@ export default function AdminPage() {
     setSaving(false);
   }
 
+  function exportCSV(matches: MatchData[]) {
+    const sorted = [...matches].sort((a, b) => a.matchNum - b.matchNum);
+    const header = ["Match", "Date", "Info", "Pot", ...PLAYERS];
+    const rows = sorted.map((m) => [
+      m.matchNum,
+      m.matchDate || "",
+      m.matchInfo || "",
+      m.betAmount,
+      ...PLAYERS.map((p) => m.winnings?.[p] || 0),
+    ]);
+    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ipl-2026-matches-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="min-h-screen bg-[#0a1628] text-blue-100 p-4">
       <div className="max-w-2xl mx-auto">
@@ -236,9 +256,16 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* CSV Export */}
+        <div className="mt-8 flex justify-center">
+          <button onClick={() => exportCSV(existingMatches)}
+            className="px-4 py-2 bg-blue-800/30 hover:bg-blue-700/30 text-sky-300 text-sm rounded-lg border border-blue-700/20 transition-colors">
+            📥 Export CSV
+          </button>
+        </div>
+
         <div className="mt-6 flex justify-center gap-4">
           <a href="/" className="text-sky-400/60 hover:text-sky-300 text-sm underline">← Dashboard</a>
-          <a href="/history" className="text-sky-400/60 hover:text-sky-300 text-sm underline">📋 Match Overview</a>
         </div>
       </div>
     </div>
