@@ -255,11 +255,12 @@ function StandingsTab() {
                 <span className="font-medium text-sky-100 flex-1">{p.name}</span>
                 <span className="text-xs text-slate-400">In-Points: ₹{formatNum(invested)}</span>
               </div>
-              <div className="flex items-center gap-3 text-sm justify-center">
-                <span className="text-sky-300">₹{formatNum(p.total)}</span>
-                <span className={p.profit >= 0 ? "text-emerald-400" : "text-red-400"}>
+              <div className="flex items-center text-sm">
+                <span className="text-sky-300 flex-1">₹{formatNum(p.total)}</span>
+                <span className={`text-center flex-1 ${p.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                   {p.profit >= 0 ? "+" : "-"}₹{formatNum(Math.abs(p.profit))}
                 </span>
+                <span className="flex-1" />
               </div>
               {/* Progress bar */}
               <div className="mt-2 h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
