@@ -18,23 +18,33 @@ export function useLiveSeasonData() {
   const [players, setPlayers] = useState<PlayerLive[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalMatches, setTotalMatches] = useState(0);
+  const [totalInvested, setTotalInvested] = useState(0);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "matches"), (snap) => {
-      // Build match data: { matchNum: { player: winnings } }
       const matchData: Record<number, Record<string, number>> = {};
+      const matchBets: Record<number, number> = {};
       let maxMatch = 0;
 
       snap.docs.forEach((d) => {
         const data = d.data();
         const num = data.matchNum as number;
         matchData[num] = data.winnings as Record<string, number>;
+        matchBets[num] = (data.betAmount as number) || 0;
         if (num > maxMatch) maxMatch = num;
       });
 
       setTotalMatches(maxMatch);
 
-      // Build player arrays
+      // Calculate total invested: sum of (betAmount / numPlayers) for each match
+      let invested = 0;
+      for (let i = 1; i <= maxMatch; i++) {
+        if (matchBets[i]) {
+          invested += Math.floor(matchBets[i] / PLAYERS.length);
+        }
+      }
+      setTotalInvested(invested);
+
       const result: PlayerLive[] = PLAYERS.map((name) => {
         const winnings: number[] = [];
         for (let i = 1; i <= maxMatch; i++) {
@@ -50,13 +60,15 @@ export function useLiveSeasonData() {
     return () => unsub();
   }, []);
 
-  return { players, loading, totalMatches };
+  return { players, loading, totalMatches, totalInvested };
 }
 
 export interface MatchLive {
   matchNum: number;
   matchInfo: string;
   betAmount: number;
+  contestLink: string;
+  contestCode: string;
   winnings: Record<string, number>;
 }
 

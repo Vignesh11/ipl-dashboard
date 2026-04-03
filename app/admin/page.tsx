@@ -17,6 +17,8 @@ interface MatchData {
   matchNum: number;
   matchInfo: string;
   betAmount: number;
+  contestLink: string;
+  contestCode: string;
   winners: string[];
   winnings: Record<string, number>;
   updatedAt: string;
@@ -34,6 +36,8 @@ export default function AdminPage() {
   const [matchNum, setMatchNum] = useState(7);
   const [matchInfo, setMatchInfo] = useState("");
   const [betAmount, setBetAmount] = useState(3200);
+  const [contestLink, setContestLink] = useState("");
+  const [contestCode, setContestCode] = useState("");
   const [winnings, setWinnings] = useState<Record<string, number>>(initWinnings);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,10 +60,14 @@ export default function AdminPage() {
         const data = snap.data() as MatchData;
         setMatchInfo(data.matchInfo || "");
         setBetAmount(data.betAmount || 3200);
+        setContestLink(data.contestLink || "");
+        setContestCode(data.contestCode || "");
         setWinnings(data.winnings || initWinnings());
       } else {
         setMatchInfo("");
         setBetAmount(3200);
+        setContestLink("");
+        setContestCode("");
         setWinnings(initWinnings());
       }
     });
@@ -90,7 +98,7 @@ export default function AdminPage() {
     setMessage("");
     try {
       await setDoc(doc(db, "matches", `match_${matchNum}`), {
-        matchNum, matchInfo, betAmount, winners, winnings,
+        matchNum, matchInfo, betAmount, contestLink, contestCode, winners, winnings,
         updatedAt: new Date().toISOString(),
       });
       setMessage(`Match ${matchNum} saved!`);
@@ -128,6 +136,20 @@ export default function AdminPage() {
             <input type="text" placeholder="e.g. CSK vs MI at Chennai" value={matchInfo}
               onChange={(e) => setMatchInfo(e.target.value)}
               className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 placeholder-blue-500/30" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-blue-400/60 block mb-1">Contest Link</label>
+              <input type="text" placeholder="https://..." value={contestLink}
+                onChange={(e) => setContestLink(e.target.value)}
+                className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 placeholder-blue-500/30 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-blue-400/60 block mb-1">Contest Code</label>
+              <input type="text" placeholder="e.g. ABC123" value={contestCode}
+                onChange={(e) => setContestCode(e.target.value)}
+                className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 placeholder-blue-500/30 text-sm" />
+            </div>
           </div>
         </div>
 
