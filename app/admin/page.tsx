@@ -133,6 +133,35 @@ export default function AdminPage() {
     URL.revokeObjectURL(url);
   }
 
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
+
+  async function syncToSheets() {
+    setSyncing(true);
+    setSyncMsg("");
+    const sorted = [...existingMatches].sort((a, b) => a.matchNum - b.matchNum);
+    const payload = {
+      players: PLAYERS,
+      matches: sorted.map((m) => ({
+        matchNum: m.matchNum,
+        matchDate: m.matchDate || "",
+        matchInfo: m.matchInfo || "",
+        betAmount: m.betAmount,
+        winnings: m.winnings || {},
+      })),
+    };
+    try {
+      await fetch(
+        "https://script.google.com/macros/s/AKfycbz6c5I8obr6gfa_X8GPA0wT2nuR1ApGVNzAGHLAxLjeQWdY9OgLlCRsukFULD8xuJ0v/exec",
+        { method: "POST", body: JSON.stringify(payload), mode: "no-cors" }
+      );
+      setSyncMsg("✅ Synced to Google Sheets!");
+    } catch (err) {
+      setSyncMsg(`❌ Sync error: ${err}`);
+    }
+    setSyncing(false);
+  }
+
   return (
     <div className="min-h-screen bg-[#0a1628] text-blue-100 p-4">
       <div className="max-w-2xl mx-auto">
@@ -256,13 +285,18 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* CSV Export */}
-        <div className="mt-8 flex justify-center">
+        {/* Export & Sync */}
+        <div className="mt-8 flex justify-center gap-3">
           <button onClick={() => exportCSV(existingMatches)}
             className="px-4 py-2 bg-blue-800/30 hover:bg-blue-700/30 text-sky-300 text-sm rounded-lg border border-blue-700/20 transition-colors">
             📥 Export CSV
           </button>
+          <button onClick={syncToSheets} disabled={syncing}
+            className="px-4 py-2 bg-emerald-800/30 hover:bg-emerald-700/30 disabled:opacity-50 text-emerald-300 text-sm rounded-lg border border-emerald-700/20 transition-colors">
+            {syncing ? "Syncing..." : "📊 Sync to Sheets"}
+          </button>
         </div>
+        {syncMsg && <p className="text-center text-xs mt-2 text-blue-300/60">{syncMsg}</p>}
 
         <div className="mt-6 flex justify-center gap-4">
           <a href="/" className="text-sky-400/60 hover:text-sky-300 text-sm underline">← Dashboard</a>
