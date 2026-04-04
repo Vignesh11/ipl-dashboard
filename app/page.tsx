@@ -325,15 +325,21 @@ function MedalsTab() {
 
   if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading medals…</p>;
 
-  // Calculate medals from live match data
+  // Calculate medals from live match data — rank-based (1st=🥇, 2nd=🥈, 3rd=🥉, 4th=🎖️)
   const medalData = PLAYER_LIST.map((name) => {
     let gold = 0, silver = 0, bronze = 0, consolation = 0;
     matches.forEach((m) => {
       const amt = m.winnings?.[name] || 0;
-      if (amt >= 1500) gold++;
-      else if (amt >= 1000) silver++;
-      else if (amt >= 500) bronze++;
-      else if (amt > 0) consolation++;
+      if (amt <= 0) return;
+      // Get all unique non-zero amounts for this match, sorted descending
+      const allAmounts = [...new Set(
+        PLAYER_LIST.map((p) => m.winnings?.[p] || 0).filter((v) => v > 0)
+      )].sort((a, b) => b - a);
+      const rank = allAmounts.indexOf(amt);
+      if (rank === 0) gold++;
+      else if (rank === 1) silver++;
+      else if (rank === 2) bronze++;
+      else consolation++;
     });
     return { name, gold, silver, bronze, consolation, total: gold + silver + bronze + consolation };
   });

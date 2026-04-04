@@ -11,7 +11,7 @@ const PLAYERS = [
   "Ranjith", "Shashi", "Shiva", "Vinay (Babu)",
 ];
 
-const PRIZE_OPTIONS = [0, 200, 500, 1000, 1500];
+const PRIZE_OPTIONS = [0, 200, 400, 500, 1000, 1500, 2000, 3000];
 
 interface MatchData {
   matchNum: number;
