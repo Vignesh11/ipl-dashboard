@@ -6,7 +6,7 @@ import { db } from "./firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, Legend, BarChart, Bar, Cell,
 } from "recharts";
 
 /* ───── constants ───── */
@@ -170,6 +170,7 @@ function SeasonTab() {
    ═══════════════════════════════════════════ */
 function StandingsTab() {
   const { players, loading, completedMatches, totalInvested } = useLiveSeasonData();
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
 
   if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading standings…</p>;
 
@@ -183,19 +184,17 @@ function StandingsTab() {
 
   const maxReturn = Math.max(...sorted.map((p) => p.total), 1);
 
-  /* Build cumulative chart data from live match winnings */
-  const chartData: Record<string, number | string>[] = [
-    { match: "Start", ...Object.fromEntries(PLAYER_LIST.map((n) => [n, 0])) },
-  ];
-  const maxMatchLen = Math.max(...players.map((p) => p.matchWinnings.length), 0);
-  for (let i = 0; i < maxMatchLen; i++) {
-    const point: Record<string, number | string> = { match: `M${i + 1}` };
-    for (const p of players) {
-      const cum = p.matchWinnings.slice(0, i + 1).reduce((s, v) => s + v, 0);
-      point[p.name] = cum;
-    }
-    chartData.push(point);
-  }
+  // Bar chart data (sorted descending)
+  const barData = sorted.map((p) => ({
+    name: p.name,
+    total: p.total,
+    profit: p.profit,
+  }));
+
+  // Selected player analysis
+  const selectedData = selectedPlayer
+    ? sorted.find((p) => p.name === selectedPlayer)
+    : null;
 
   const rankBadge = (i: number) => {
     if (i === 0) return <span className="text-lg">🥇</span>;
@@ -209,32 +208,6 @@ function StandingsTab() {
       <p className="text-center text-sm text-sky-400/70">
         {completedMatches} matches completed • ₹{formatNum(invested)} in-points per player
       </p>
-
-      {/* Cumulative winnings chart */}
-      <div className="bg-slate-800/30 rounded-xl p-4">
-        <h4 className="text-sky-300 text-sm font-semibold mb-3">Cumulative Winnings</h4>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <XAxis dataKey="match" tick={{ fill: "#94a3b8", fontSize: 10 }} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} />
-            <Tooltip
-              contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8 }}
-              labelStyle={{ color: "#94a3b8" }}
-            />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-            {PLAYER_LIST.map((name, idx) => (
-              <Line
-                key={name}
-                type="monotone"
-                dataKey={name}
-                stroke={COLORS[idx]}
-                strokeWidth={1.5}
-                dot={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
 
       {/* Player cards */}
       <div className="space-y-2">
@@ -254,16 +227,91 @@ function StandingsTab() {
                 </span>
                 <span className="flex-1" />
               </div>
-              {/* Progress bar */}
               <div className="mt-2 h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400"
-                  style={{ width: `${Math.max(pct, 1)}%` }}
-                />
+                <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400"
+                  style={{ width: `${Math.max(pct, 1)}%` }} />
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Player Analysis Dropdown */}
+      <div className="bg-slate-800/30 rounded-xl p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <h4 className="text-sky-300 text-sm font-semibold">🔍 Player Analysis</h4>
+          <select value={selectedPlayer} onChange={(e) => setSelectedPlayer(e.target.value)}
+            className="bg-slate-800 border border-slate-600/30 rounded-lg px-3 py-1.5 text-sm text-sky-100 flex-1">
+            <option value="">Select a player...</option>
+            {sorted.map((p) => (
+              <option key={p.name} value={p.name}>{p.name} — ₹{formatNum(p.total)}</option>
+            ))}
+          </select>
+        </div>
+        {selectedData && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-sky-100 font-semibold text-lg">{selectedData.name}</span>
+              <span className="text-sky-300">₹{formatNum(selectedData.total)} return</span>
+              <span className={selectedData.profit >= 0 ? "text-emerald-400" : "text-red-400"}>
+                {selectedData.profit >= 0 ? "+" : "-"}₹{formatNum(Math.abs(selectedData.profit))}
+              </span>
+            </div>
+            {/* Match-by-match breakdown */}
+            <div className="grid grid-cols-6 md:grid-cols-8 gap-1">
+              {selectedData.matchWinnings.map((w, i) => (
+                <div key={i} className={`text-center rounded p-1.5 ${
+                  w >= 1500 ? "bg-yellow-500/20 border border-yellow-500/30" :
+                  w >= 1000 ? "bg-slate-400/15 border border-slate-400/20" :
+                  w >= 500 ? "bg-amber-700/15 border border-amber-700/20" :
+                  w > 0 ? "bg-sky-900/20 border border-sky-800/20" :
+                  "bg-slate-800/20 border border-slate-800/20"
+                }`}>
+                  <div className="text-[9px] text-slate-500">M{i + 1}</div>
+                  <div className={`text-xs font-mono font-bold ${
+                    w >= 1500 ? "text-yellow-400" :
+                    w >= 1000 ? "text-slate-300" :
+                    w >= 500 ? "text-amber-500" :
+                    w > 0 ? "text-sky-400" :
+                    "text-slate-600"
+                  }`}>
+                    {w > 0 ? formatNum(w) : "–"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Stats */}
+            <div className="flex gap-4 text-xs text-slate-400">
+              <span>Wins: {selectedData.matchWinnings.filter((w) => w > 0).length}/{selectedData.matchWinnings.length}</span>
+              <span>Best: ₹{formatNum(Math.max(...selectedData.matchWinnings))}</span>
+              <span>Avg: ₹{formatNum(Math.round(selectedData.total / Math.max(selectedData.matchWinnings.length, 1)))}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Horizontal bar chart — sorted by total winnings */}
+      <div className="bg-slate-800/30 rounded-xl p-4">
+        <h4 className="text-sky-300 text-sm font-semibold mb-3">Total Winnings</h4>
+        <ResponsiveContainer width="100%" height={Math.max(barData.length * 32, 200)}>
+          <BarChart data={barData} layout="vertical" margin={{ left: 70, right: 20 }}>
+            <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 10 }}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`} />
+            <YAxis type="category" dataKey="name" tick={{ fill: "#e2e8f0", fontSize: 11 }} width={65} />
+            <Tooltip
+              contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }}
+              formatter={(v) => [`₹${formatNum(Number(v))}`, "Total"]}
+            />
+            <Bar dataKey="total" radius={[0, 6, 6, 0]} barSize={20}>
+              {barData.map((entry, i) => (
+                <Cell key={i} fill={
+                  i === 0 ? "#facc15" : i === 1 ? "#94a3b8" : i === 2 ? "#d97706" :
+                  entry.profit >= 0 ? "#38bdf8" : "#ef4444"
+                } />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -494,7 +542,7 @@ export default function Home() {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-300 to-sky-400">
             🏏 IPL Stats Dashboard
           </h1>
-          <p className="text-xs text-blue-400/40 mt-1">Auction League • 2020–2026</p>
+          <p className="text-xs text-blue-400/40 mt-1">Auction League • Since 2020</p>
         </header>
 
         <nav className="max-w-3xl mx-auto px-4 mb-6">
