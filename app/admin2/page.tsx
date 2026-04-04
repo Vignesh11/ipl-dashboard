@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 
 const ADMIN_PASSWORD = "silv2026";
 
@@ -11,18 +11,29 @@ const PLAYERS = [
   "Ranjeeth", "Sreeram", "Vignesh", "Pruthvi", "Jay",
 ];
 
+type Result = "skip" | "correct" | "twist_correct" | "twist_wrong";
+
+const RESULT_CONFIG: Record<Result, { label: string; emoji: string; points: number; color: string; activeColor: string }> = {
+  skip: { label: "Wrong/Skip", emoji: "⬜", points: 0, color: "text-slate-500", activeColor: "bg-slate-700/40 border-slate-500/30 text-slate-300" },
+  correct: { label: "+100", emoji: "✅", points: 100, color: "text-emerald-400", activeColor: "bg-emerald-900/40 border-emerald-500/30 text-emerald-300" },
+  twist_correct: { label: "🌀 +200", emoji: "🌀✅", points: 200, color: "text-yellow-400", activeColor: "bg-yellow-900/30 border-yellow-500/30 text-yellow-300" },
+  twist_wrong: { label: "🌀 -100", emoji: "❌", points: -100, color: "text-red-400", activeColor: "bg-red-900/30 border-red-500/30 text-red-300" },
+};
+
 export default function Admin2Page() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [scores, setScores] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<string[]>([]);
+  const [results, setResults] = useState<Record<string, Result>>(() => {
+    const init: Record<string, Result> = {};
+    PLAYERS.forEach((p) => (init[p] = "skip"));
+    return init;
+  });
   const [saving, setSaving] = useState(false);
-  const [matchLabel, setMatchLabel] = useState("");
+  const [matchDate, setMatchDate] = useState(new Date().toISOString().split("T")[0]);
   const [matchNum, setMatchNum] = useState(1);
-  const [twister, setTwister] = useState(false);
 
-  // Load current scores from Firestore
   useEffect(() => {
     if (!authed) return;
     const unsub = onSnapshot(doc(db, "guessGame", "scores"), (snap) => {
@@ -54,65 +65,63 @@ export default function Admin2Page() {
     );
   }
 
-  function togglePlayer(name: string) {
-    setSelected((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
-  }
+  // Calculate total points for this round
+  const roundSummary = PLAYERS.map((p) => ({
+    name: p,
+    result: results[p],
+    points: RESULT_CONFIG[results[p]].points,
+  }));
+  const totalAwarded = roundSummary.reduce((s, r) => s + (r.points > 0 ? r.points : 0), 0);
+  const totalDeducted = roundSummary.reduce((s, r) => s + (r.points < 0 ? r.points : 0), 0);
 
   async function handleSave() {
-    if (selected.length === 0) { setMessage("Select at least one winner"); return; }
+    const hasAny = PLAYERS.some((p) => results[p] !== "skip");
+    if (!hasAny) { setMessage("Set at least one result"); return; }
     setSaving(true);
     setMessage("");
     try {
       const updated = { ...scores };
-      PLAYERS.forEach((p) => { if (!updated[p]) updated[p] = 0; });
-      if (twister) {
-        // Twister: winners +200, losers -100
-        selected.forEach((p) => { updated[p] = (updated[p] || 0) + 200; });
-        PLAYERS.filter((p) => !selected.includes(p)).forEach((p) => { updated[p] = (updated[p] || 0) - 100; });
-      } else {
-        // Normal: winners +100
-        selected.forEach((p) => { updated[p] = (updated[p] || 0) + 100; });
-      }
+      PLAYERS.forEach((p) => {
+        if (!updated[p]) updated[p] = 0;
+        updated[p] += RESULT_CONFIG[results[p]].points;
+      });
 
-      // Save updated scores
       await setDoc(doc(db, "guessGame", "scores"), { points: updated });
 
-      // Save this round's history
       const histRef = doc(db, "guessGame", `round_${matchNum}_${Date.now()}`);
       await setDoc(histRef, {
         matchNum,
-        date: matchLabel || new Date().toISOString().split("T")[0],
-        winners: selected,
-        twister,
-        pointsAwarded: twister ? 200 : 100,
-        pointsDeducted: twister ? -100 : 0,
+        date: matchDate,
+        results: Object.fromEntries(PLAYERS.map((p) => [p, { result: results[p], points: RESULT_CONFIG[results[p]].points }])),
         timestamp: new Date().toISOString(),
       });
 
-      setMessage(`✅ Match ${matchNum}${twister ? " 🌀TWISTER" : ""}: ${twister ? "+200/-100" : "+100"} → ${selected.join(", ")}`);
-      setSelected([]);
+      const winners = PLAYERS.filter((p) => results[p] === "correct" || results[p] === "twist_correct");
+      const twisters = PLAYERS.filter((p) => results[p] === "twist_wrong");
+      setMessage(`✅ M${matchNum}: ${winners.length} correct${twisters.length > 0 ? `, ${twisters.length} twist fails` : ""}`);
+
+      // Reset for next round
+      const reset: Record<string, Result> = {};
+      PLAYERS.forEach((p) => (reset[p] = "skip"));
+      setResults(reset);
       setMatchNum((n) => n + 1);
-      setMatchLabel("");
     } catch (err) {
       setMessage(`❌ Error: ${err}`);
     }
     setSaving(false);
   }
 
-  // Sort by score for display
   const sorted = PLAYERS.map((p) => ({ name: p, pts: scores[p] || 0 })).sort((a, b) => b.pts - a.pts);
 
   return (
     <div className="min-h-screen bg-[#0a1628] text-blue-100 p-4">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-sky-300 mb-1 text-center">🎲 Guess Game Admin</h1>
-        <p className="text-xs text-blue-400/40 text-center mb-6">Select today&apos;s winners — each gets +100 pts</p>
+        <p className="text-xs text-blue-400/40 text-center mb-6">Set each player&apos;s result per match</p>
 
         {/* Match info */}
-        <div className="bg-blue-950/40 border border-blue-800/25 rounded-xl p-4 mb-4 space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="bg-blue-950/40 border border-blue-800/25 rounded-xl p-4 mb-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-blue-400/60 block mb-1">Match #</label>
               <input type="number" min={1} value={matchNum}
@@ -121,55 +130,59 @@ export default function Admin2Page() {
             </div>
             <div>
               <label className="text-xs text-blue-400/60 block mb-1">Date</label>
-              <input type="date" value={matchLabel || new Date().toISOString().split("T")[0]}
-                onChange={(e) => setMatchLabel(e.target.value)}
+              <input type="date" value={matchDate}
+                onChange={(e) => setMatchDate(e.target.value)}
                 className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 text-center" />
             </div>
-            <div className="flex items-end pb-1">
-              <span className="text-xs text-blue-400/40">{selected.length} winner{selected.length !== 1 ? "s" : ""} selected</span>
-            </div>
           </div>
         </div>
 
-        {/* Twister toggle */}
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <button onClick={() => setTwister(!twister)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              twister
-                ? "bg-red-600/30 border border-red-500/40 text-red-300 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
-                : "bg-blue-900/20 border border-blue-700/20 text-blue-400/50"
-            }`}>
-            {twister ? "🌀 TWISTER ON — Winners +200 / Losers -100" : "🌀 Twister Off — Normal +100"}
-          </button>
+        {/* Scoring legend */}
+        <div className="flex flex-wrap gap-2 justify-center mb-4 text-xs">
+          {(Object.keys(RESULT_CONFIG) as Result[]).map((r) => (
+            <span key={r} className={`px-2 py-1 rounded ${RESULT_CONFIG[r].color}`}>
+              {RESULT_CONFIG[r].emoji} {RESULT_CONFIG[r].label}
+            </span>
+          ))}
         </div>
 
-        {/* Player selection */}
+        {/* Player results */}
         <div className="bg-blue-950/40 border border-blue-800/25 rounded-xl overflow-hidden mb-4">
           <div className="px-4 py-2 bg-blue-900/25 border-b border-blue-800/25 flex items-center justify-between">
-            <span className="text-xs font-bold text-sky-400 uppercase">Select Winners</span>
-            <span className="text-xs text-blue-400/50">Tap to toggle</span>
+            <span className="text-xs font-bold text-sky-400 uppercase">Player Results</span>
+            <span className="text-xs text-blue-400/50">
+              +{totalAwarded} / {totalDeducted}
+            </span>
           </div>
-          <div className="grid grid-cols-2 gap-0">
-            {PLAYERS.map((player) => {
-              const isSelected = selected.includes(player);
-              return (
-                <button key={player} onClick={() => togglePlayer(player)}
-                  className={`px-4 py-3 text-left text-sm border-b border-r border-blue-900/15 transition-all ${
-                    isSelected ? "bg-emerald-900/30 text-emerald-300 font-semibold" : "text-blue-300/60 hover:bg-blue-900/10"
-                  }`}>
-                  {isSelected ? "✅ " : "⬜ "}{player}
-                  <span className="float-right text-xs text-blue-400/40">{scores[player] || 0} pts</span>
-                </button>
-              );
-            })}
-          </div>
+          {PLAYERS.map((player) => (
+            <div key={player} className={`px-3 py-2 border-b border-blue-900/15 ${results[player] !== "skip" ? "bg-blue-900/10" : ""}`}>
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-sm ${results[player] !== "skip" ? "text-blue-100 font-semibold" : "text-blue-300/50"}`}>
+                  {RESULT_CONFIG[results[player]].emoji} {player}
+                </span>
+                <span className={`text-xs font-mono ${RESULT_CONFIG[results[player]].color}`}>
+                  {scores[player] || 0} pts
+                </span>
+              </div>
+              <div className="flex gap-1">
+                {(Object.keys(RESULT_CONFIG) as Result[]).map((r) => (
+                  <button key={r} onClick={() => setResults({ ...results, [player]: r })}
+                    className={`flex-1 px-1 py-1 text-[10px] rounded border transition-all ${
+                      results[player] === r ? RESULT_CONFIG[r].activeColor : "bg-blue-900/10 border-blue-800/15 text-blue-500/30 hover:bg-blue-800/20"
+                    }`}>
+                    {RESULT_CONFIG[r].emoji} {RESULT_CONFIG[r].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Save */}
         <div className="flex items-center gap-3 justify-center">
           <button onClick={handleSave} disabled={saving}
             className="px-6 py-2 bg-sky-600 hover:bg-sky-500 disabled:bg-sky-800 text-white font-semibold rounded-lg transition-colors">
-            {saving ? "Saving..." : twister ? "🌀 Award Twister" : "Award +100 pts"}
+            {saving ? "Saving..." : `Save Match ${matchNum}`}
           </button>
         </div>
         {message && (
@@ -184,7 +197,7 @@ export default function Admin2Page() {
           {sorted.map((p, i) => (
             <div key={p.name} className="px-4 py-2 border-b border-blue-900/15 flex items-center justify-between">
               <span className="text-sm text-blue-200">#{i + 1} {p.name}</span>
-              <span className="text-sm font-bold text-sky-300">{p.pts} pts</span>
+              <span className={`text-sm font-bold ${p.pts >= 0 ? "text-sky-300" : "text-red-400"}`}>{p.pts} pts</span>
             </div>
           ))}
         </div>
