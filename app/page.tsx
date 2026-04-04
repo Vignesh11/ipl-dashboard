@@ -244,7 +244,7 @@ function StandingsTab() {
             className="bg-slate-800 border border-slate-600/30 rounded-lg px-3 py-1.5 text-sm text-sky-100 flex-1">
             <option value="">Select a player...</option>
             {sorted.map((p) => (
-              <option key={p.name} value={p.name}>{p.name} — ₹{formatNum(p.total)}</option>
+              <option key={p.name} value={p.name}>{p.name}</option>
             ))}
           </select>
         </div>
