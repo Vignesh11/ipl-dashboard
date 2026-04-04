@@ -259,7 +259,7 @@ function StandingsTab() {
             </div>
             {/* Match-by-match breakdown */}
             <div className="grid grid-cols-6 md:grid-cols-8 gap-1">
-              {selectedData.matchWinnings.map((w, i) => (
+              {selectedData.matchWinnings.slice(0, completedMatches).map((w, i) => (
                 <div key={i} className={`text-center rounded p-1.5 ${
                   w >= 1500 ? "bg-yellow-500/20 border border-yellow-500/30" :
                   w >= 1000 ? "bg-slate-400/15 border border-slate-400/20" :
@@ -282,9 +282,9 @@ function StandingsTab() {
             </div>
             {/* Stats */}
             <div className="flex gap-4 text-xs text-slate-400">
-              <span>Wins: {selectedData.matchWinnings.filter((w) => w > 0).length}/{selectedData.matchWinnings.length}</span>
-              <span>Best: ₹{formatNum(Math.max(...selectedData.matchWinnings))}</span>
-              <span>Avg: ₹{formatNum(Math.round(selectedData.total / Math.max(selectedData.matchWinnings.length, 1)))}</span>
+              <span>Wins: {selectedData.matchWinnings.slice(0, completedMatches).filter((w) => w > 0).length}/{completedMatches}</span>
+              <span>Best: ₹{formatNum(Math.max(...selectedData.matchWinnings.slice(0, completedMatches), 0))}</span>
+              <span>Avg: ₹{formatNum(Math.round(selectedData.total / Math.max(completedMatches, 1)))}</span>
             </div>
           </div>
         )}
