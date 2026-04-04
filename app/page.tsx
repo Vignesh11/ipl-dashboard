@@ -252,7 +252,6 @@ function StandingsTab() {
           <div className="space-y-3">
             <div className="flex items-center gap-4 text-sm">
               <span className="text-sky-100 font-semibold text-lg">{selectedData.name}</span>
-              <span className="text-sky-300">₹{formatNum(selectedData.total)} return</span>
               <span className={selectedData.profit >= 0 ? "text-emerald-400" : "text-red-400"}>
                 {selectedData.profit >= 0 ? "+" : "-"}₹{formatNum(Math.abs(selectedData.profit))}
               </span>
