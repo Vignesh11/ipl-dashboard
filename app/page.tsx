@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { medalTable, allTimeWinnings, combinedPodiums } from "./data";
 import { useLiveSeasonData, useLiveMatches } from "./useFirestore";
 import { db } from "./firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, collection, getDocs } from "firebase/firestore";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Legend, BarChart, Bar, Cell,
@@ -475,6 +475,7 @@ function AllTimeTab() {
    ═══════════════════════════════════════════ */
 function GuessGameTab() {
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [roundHistory, setRoundHistory] = useState<Array<{ matchNum: number; date: string; results: Record<string, { result: string; points: number }> }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -485,6 +486,16 @@ function GuessGameTab() {
       setLoading(false);
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    getDocs(collection(db, "guessGame")).then((snap) => {
+      const rounds = snap.docs
+        .filter((d) => d.id.startsWith("round_"))
+        .map((d) => d.data() as { matchNum: number; date: string; timestamp: string; results: Record<string, { result: string; points: number }> })
+        .sort((a, b) => b.matchNum - a.matchNum || b.timestamp.localeCompare(a.timestamp));
+      setRoundHistory(rounds);
+    });
   }, []);
 
   if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading…</p>;
@@ -501,34 +512,75 @@ function GuessGameTab() {
 
   return (
     <div className="space-y-6">
-      {/* Leaderboard */}
-      <div>
-        <h3 className="text-sky-300 font-semibold mb-3">🎲 Team Bawa Prediction League</h3>
-        <div className="space-y-1.5">
-          {sorted.map((p, i) => {
-            const rank = i + 1;
-            return (
-              <div key={p.name} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                rank <= 3 ? "bg-slate-800/40" : "bg-slate-800/20"
-              }`}>
-                <span className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold shrink-0 ${
-                  rank === 1 ? "bg-yellow-500 text-black" : rank === 2 ? "bg-gray-400 text-black" : rank === 3 ? "bg-amber-700 text-white" : "bg-slate-700 text-slate-400"
-                }`}>{rank}</span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.seed}&backgroundColor=b6e3f4,c0aede`} alt={p.name}
-                  className="w-8 h-8 rounded-full bg-slate-700 shrink-0" />
-                <span className="flex-1 text-sm text-sky-100">{p.name}</span>
-                <span className="text-sm font-bold text-sky-300">{p.points} <span className="text-xs text-slate-500">PTS</span></span>
-              </div>
-            );
-          })}
+      <h3 className="text-sky-300 font-semibold text-center">🎲 Team Bawa Prediction League</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left — Standings */}
+        <div>
+          <h4 className="text-xs font-bold text-sky-400 uppercase mb-2">Standings</h4>
+          <div className="space-y-1.5">
+            {sorted.map((p, i) => {
+              const rank = i + 1;
+              return (
+                <div key={p.name} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                  rank <= 3 ? "bg-slate-800/40" : "bg-slate-800/20"
+                }`}>
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${
+                    rank === 1 ? "bg-yellow-500 text-black" : rank === 2 ? "bg-gray-400 text-black" : rank === 3 ? "bg-amber-700 text-white" : "bg-slate-700 text-slate-400"
+                  }`}>{rank}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.seed}&backgroundColor=b6e3f4,c0aede`} alt={p.name}
+                    className="w-7 h-7 rounded-full bg-slate-700 shrink-0" />
+                  <span className="flex-1 text-sm text-sky-100">{p.name}</span>
+                  <span className="text-sm font-bold text-sky-300">{p.points} <span className="text-[10px] text-slate-500">PTS</span></span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right — Round Results */}
+        <div>
+          <h4 className="text-xs font-bold text-sky-400 uppercase mb-2">Round Results</h4>
+          {roundHistory.length === 0 ? (
+            <p className="text-sm text-slate-500">No rounds yet</p>
+          ) : (
+            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+              {roundHistory.map((round, idx) => {
+                const correct = GUESS_PLAYERS.filter((p) => round.results[p]?.result === "correct" || round.results[p]?.result === "twist_correct");
+                const twistWrong = GUESS_PLAYERS.filter((p) => round.results[p]?.result === "twist_wrong");
+                return (
+                  <div key={idx} className="bg-slate-800/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-blue-200">M{round.matchNum}</span>
+                      <span className="text-xs text-slate-500">{round.date}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {correct.map((p) => (
+                        <span key={p} className="text-[10px] bg-emerald-900/30 text-emerald-300 px-1.5 py-0.5 rounded-full">
+                          ✅ {p} +{round.results[p].points}
+                        </span>
+                      ))}
+                      {twistWrong.map((p) => (
+                        <span key={p} className="text-[10px] bg-red-900/30 text-red-300 px-1.5 py-0.5 rounded-full">
+                          ❌ {p} {round.results[p].points}
+                        </span>
+                      ))}
+                      {correct.length === 0 && twistWrong.length === 0 && (
+                        <span className="text-xs text-slate-500/40">All wrong/skipped</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Daily Questions removed */}
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════════
    MAIN – Home
