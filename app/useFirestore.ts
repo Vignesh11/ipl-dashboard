@@ -77,6 +77,7 @@ export interface MatchLive {
   contestLink: string;
   contestCode: string;
   winnings: Record<string, number>;
+  cancelled?: boolean;
 }
 
 export function useLiveMatches() {

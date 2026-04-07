@@ -6,9 +6,9 @@ import { doc, setDoc, onSnapshot } from "firebase/firestore";
 const ADMIN_PASSWORD = "silv2026";
 
 const PLAYERS = [
-  "Shiva", "Aditya", "Ankit", "Varun", "Harsha", "Manju",
-  "Ravi", "Rohit", "Siddhu", "Sivakarthik", "Sugam", "Vinay",
-  "Ranjeeth", "Sreeram", "Vignesh", "Pruthvi", "Jay",
+  "Aditya", "Ankit", "Harsha", "Jay", "Manju", "Pruthvi",
+  "Ranjeeth", "Ravi", "Rohit", "Siddhu", "Sivakarthik", "Sreeram",
+  "Sugam", "Varun", "Vignesh", "Vinay", "Shiva",
 ];
 
 type Result = "skip" | "correct" | "twist_correct" | "twist_wrong";

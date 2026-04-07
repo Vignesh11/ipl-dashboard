@@ -329,6 +329,7 @@ function MedalsTab() {
   const medalData = PLAYER_LIST.map((name) => {
     let gold = 0, silver = 0, bronze = 0, consolation = 0;
     matches.forEach((m) => {
+      if (m.cancelled) return; // skip rain-outs / cancelled matches
       const amt = m.winnings?.[name] || 0;
       if (amt <= 0) return;
       // Get all unique non-zero amounts for this match, sorted descending

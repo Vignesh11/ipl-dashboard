@@ -6,9 +6,9 @@ import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 const ADMIN_PASSWORD = "bawa2026";
 
 const PLAYERS = [
-  "Harsha", "Vignesh", "Sidhu", "Jaydev", "Aditya", "Karthik",
-  "Sreeram", "Manju", "Anoop", "Ravindra", "Ankit", "Prithvi",
-  "Ranjith", "Shashi", "Shiva", "Vinay (Babu)",
+  "Aditya", "Ankit", "Anoop", "Harsha", "Jaydev", "Karthik",
+  "Manju", "Prithvi", "Ranjith", "Ravindra", "Shashi", "Shiva",
+  "Sidhu", "Sreeram", "Vignesh", "Vinay (Babu)",
 ];
 
 const PRIZE_OPTIONS = [0, 200, 400, 500, 1000, 1500, 2000, 3000];
@@ -34,13 +34,14 @@ function initWinnings(): Record<string, number> {
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
-  const [matchNum, setMatchNum] = useState(7);
-  const [matchDate, setMatchDate] = useState(new Date().toISOString().split("T")[0]);
+  const [matchNum, setMatchNum] = useState(0);
+  const [matchDate, setMatchDate] = useState("");
   const [matchInfo, setMatchInfo] = useState("");
   const [betAmount, setBetAmount] = useState(3200);
   const [contestLink, setContestLink] = useState("");
   const [contestCode, setContestCode] = useState("");
   const [winnings, setWinnings] = useState<Record<string, number>>(initWinnings);
+  const [cancelled, setCancelled] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [existingMatches, setExistingMatches] = useState<MatchData[]>([]);
@@ -66,13 +67,15 @@ export default function AdminPage() {
         setContestLink(data.contestLink || "");
         setContestCode(data.contestCode || "");
         setWinnings(data.winnings || initWinnings());
+        setCancelled(!!(data as MatchData & { cancelled?: boolean }).cancelled);
       } else {
-        setMatchDate(new Date().toISOString().split("T")[0]);
+        setMatchDate("");
         setMatchInfo("");
         setBetAmount(3200);
         setContestLink("");
         setContestCode("");
         setWinnings(initWinnings());
+        setCancelled(false);
       }
     });
   }, [matchNum, authed]);
@@ -97,12 +100,22 @@ export default function AdminPage() {
   const totalAwarded = Object.values(winnings).reduce((a, b) => a + b, 0);
   const winners = PLAYERS.filter((p) => winnings[p] > 0);
 
+  function handleRainRefund() {
+    const refundPerPlayer = Math.floor(betAmount / PLAYERS.length);
+    const refund: Record<string, number> = {};
+    PLAYERS.forEach((p) => (refund[p] = refundPerPlayer));
+    setWinnings(refund);
+    setCancelled(true);
+    setMatchInfo((prev) => prev ? prev + " — ☔ Rained Out" : "☔ Rained Out");
+  }
+
   async function handleSave() {
     setSaving(true);
     setMessage("");
     try {
       await setDoc(doc(db, "matches", `match_${matchNum}`), {
         matchNum, matchDate, matchInfo, betAmount, contestLink, contestCode, winners, winnings,
+        cancelled,
         updatedAt: new Date().toISOString(),
       });
       setMessage(`Match ${matchNum} saved!`);
@@ -181,6 +194,21 @@ export default function AdminPage() {
                 className="w-full px-3 py-2 bg-blue-900/30 border border-blue-700/30 rounded-lg text-blue-100 placeholder-blue-500/30 text-sm" />
             </div>
           </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="flex items-center gap-3 mb-4">
+          <button onClick={handleRainRefund}
+            className="px-4 py-2 bg-amber-700/30 hover:bg-amber-600/30 text-amber-300 text-sm rounded-lg border border-amber-700/20 transition-colors">
+            ☔ Rain Out (₹{Math.floor(betAmount / PLAYERS.length)} refund each)
+          </button>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={cancelled} onChange={(e) => setCancelled(e.target.checked)}
+              className="w-4 h-4 rounded bg-blue-900/30 border-blue-700/30 accent-amber-500" />
+            <span className={`text-sm ${cancelled ? "text-amber-300" : "text-blue-400/50"}`}>
+              {cancelled ? "☔ Cancelled (no medals)" : "Mark as cancelled"}
+            </span>
+          </label>
         </div>
 
         {/* Player prize selection */}
