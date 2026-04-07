@@ -33,6 +33,7 @@ export default function Admin2Page() {
   const [saving, setSaving] = useState(false);
   const [matchDate, setMatchDate] = useState(new Date().toISOString().split("T")[0]);
   const [matchNum, setMatchNum] = useState(1);
+  const [roundHistory, setRoundHistory] = useState<Array<{ matchNum: number; date: string; timestamp: string; results: Record<string, { result: Result; points: number }> }>>([]);
 
   useEffect(() => {
     if (!authed) return;
@@ -47,6 +48,26 @@ export default function Admin2Page() {
     });
     return () => unsub();
   }, [authed]);
+
+  // Load round history
+  useEffect(() => {
+    if (!authed) return;
+    getDocs(collection(db, "guessGame")).then((snap) => {
+      const rounds = snap.docs
+        .filter((d) => d.id.startsWith("round_"))
+        .map((d) => {
+          const data = d.data();
+          return {
+            matchNum: data.matchNum as number,
+            date: (data.date as string) || "",
+            timestamp: (data.timestamp as string) || "",
+            results: (data.results || {}) as Record<string, { result: Result; points: number }>,
+          };
+        })
+        .sort((a, b) => b.matchNum - a.matchNum || b.timestamp.localeCompare(a.timestamp));
+      setRoundHistory(rounds);
+    }).catch(() => setRoundHistory([]));
+  }, [authed, saving]); // refresh after each save
 
   if (!authed) {
     return (
@@ -201,6 +222,42 @@ export default function Admin2Page() {
             </div>
           ))}
         </div>
+
+        {/* Round History */}
+        {roundHistory.length > 0 && (
+          <div className="mt-8 bg-blue-950/40 border border-blue-800/25 rounded-xl overflow-hidden">
+            <div className="px-4 py-2 bg-blue-900/25 border-b border-blue-800/25">
+              <span className="text-xs font-bold text-sky-400 uppercase">Round History</span>
+            </div>
+            {roundHistory.map((round, idx) => {
+              const correct = PLAYERS.filter((p) => round.results[p]?.result === "correct" || round.results[p]?.result === "twist_correct");
+              const twistWrong = PLAYERS.filter((p) => round.results[p]?.result === "twist_wrong");
+              return (
+                <div key={idx} className="px-4 py-3 border-b border-blue-900/15">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm font-semibold text-blue-200">M{round.matchNum}</span>
+                    <span className="text-xs text-blue-400/40">{round.date}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {correct.map((p) => (
+                      <span key={p} className="text-xs bg-emerald-900/30 text-emerald-300 px-2 py-0.5 rounded-full">
+                        ✅ {p} +{round.results[p].points}
+                      </span>
+                    ))}
+                    {twistWrong.map((p) => (
+                      <span key={p} className="text-xs bg-red-900/30 text-red-300 px-2 py-0.5 rounded-full">
+                        ❌ {p} {round.results[p].points}
+                      </span>
+                    ))}
+                    {correct.length === 0 && twistWrong.length === 0 && (
+                      <span className="text-xs text-blue-500/30">All wrong/skipped</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mt-6 flex justify-center gap-4">
           <a href="/" className="text-sky-400/60 hover:text-sky-300 text-sm underline">← Dashboard</a>

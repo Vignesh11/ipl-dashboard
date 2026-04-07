@@ -492,9 +492,20 @@ function GuessGameTab() {
     getDocs(collection(db, "guessGame")).then((snap) => {
       const rounds = snap.docs
         .filter((d) => d.id.startsWith("round_"))
-        .map((d) => d.data() as { matchNum: number; date: string; timestamp: string; results: Record<string, { result: string; points: number }> })
+        .map((d) => {
+          const data = d.data();
+          return {
+            matchNum: data.matchNum as number,
+            date: (data.date as string) || "",
+            timestamp: (data.timestamp as string) || "",
+            results: (data.results || {}) as Record<string, { result: string; points: number }>,
+          };
+        })
         .sort((a, b) => b.matchNum - a.matchNum || b.timestamp.localeCompare(a.timestamp));
       setRoundHistory(rounds);
+    }).catch(() => {
+      // Firestore may not have round data yet — that's fine
+      setRoundHistory([]);
     });
   }, []);
 
