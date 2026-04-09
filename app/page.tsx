@@ -608,8 +608,8 @@ export default function Home() {
 
       <div className="relative z-10">
         <header className="text-center pt-8 pb-4">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight shimmer-title">
-            🏏 IPL Stats Dashboard
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-300 to-sky-400">
+            <span className="bat-anim">🏏</span> IPL Stats Dashboard
           </h1>
           <p className="text-xs text-blue-400/40 mt-1">Auction League • Since 2020</p>
         </header>
