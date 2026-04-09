@@ -278,8 +278,75 @@ function StandingsTab() {
     return prevTotals[0]?.name !== sorted[0]?.name;
   })();
 
+  // Rank change arrows: compare current rank vs rank after previous match
+  const rankChanges: Record<string, number> = {};
+  if (completedMatches >= 2) {
+    const prevSorted = [...sorted]
+      .map((p) => ({
+        name: p.name,
+        prevTotal: p.matchWinnings.slice(0, completedMatches - 1).reduce((s, v) => s + v, 0),
+      }))
+      .sort((a, b) => b.prevTotal - a.prevTotal);
+    const prevRankMap: Record<string, number> = {};
+    prevSorted.forEach((p, idx) => { prevRankMap[p.name] = idx; });
+    sorted.forEach((p, idx) => {
+      const prev = prevRankMap[p.name];
+      if (prev !== undefined) rankChanges[p.name] = prev - idx; // positive = moved up
+    });
+  }
+
+  // Confetti state
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiShown = useRef(false);
+  useEffect(() => {
+    if (isNewTopper && !confettiShown.current) {
+      confettiShown.current = true;
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isNewTopper]);
+
+  const confettiColors = ["#facc15", "#38bdf8", "#f472b6", "#4ade80", "#fb923c", "#a78bfa", "#f87171", "#22d3ee"];
+  const confettiPieces = showConfetti
+    ? Array.from({ length: 60 }, (_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 1}s`,
+        duration: `${1.5 + Math.random() * 1.5}s`,
+        color: confettiColors[i % confettiColors.length],
+        size: 4 + Math.random() * 8,
+        rotation: Math.random() * 360,
+      }))
+    : [];
+
+  const rankArrow = (name: string) => {
+    const change = rankChanges[name];
+    if (change === undefined || change === 0) return <span className="text-[10px] text-slate-600 w-6 text-center">–</span>;
+    if (change > 0) return <span className="text-[10px] font-bold text-emerald-400 w-6 text-center">↑{change}</span>;
+    return <span className="text-[10px] font-bold text-red-400 w-6 text-center">↓{Math.abs(change)}</span>;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Confetti on new #1 */}
+      {showConfetti && (
+        <div className="confetti-container">
+          {confettiPieces.map((p) => (
+            <div key={p.id} className="confetti-piece"
+              style={{
+                left: p.left,
+                top: "-10px",
+                width: p.size,
+                height: p.size,
+                backgroundColor: p.color,
+                animationDelay: p.delay,
+                animationDuration: p.duration,
+                transform: `rotate(${p.rotation}deg)`,
+              }} />
+          ))}
+        </div>
+      )}
       <p className="text-center text-sm text-sky-400/70">
         {completedMatches} matches completed • ₹{formatNum(invested)} in-points per player
       </p>
@@ -297,6 +364,7 @@ function StandingsTab() {
                 : "bg-slate-800/40"}`}>
               <div className="flex items-center gap-2 mb-1">
                 {rankBadge(i)}
+                {rankArrow(p.name)}
                 <span className="font-medium text-sky-100 flex-1">{p.name}</span>
                 {showNewTopper && (
                   <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 rounded-full px-2 py-0.5 animate-pulse">
