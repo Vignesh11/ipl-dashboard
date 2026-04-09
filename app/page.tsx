@@ -247,6 +247,37 @@ function StandingsTab() {
     return <span className="text-xs text-slate-500 font-mono w-6 text-center">#{i + 1}</span>;
   };
 
+  // Streak detection: count consecutive wins/losses from the end
+  const getStreak = (winnings: number[], matchCount: number) => {
+    const recent = winnings.slice(0, matchCount).reverse(); // most recent first
+    if (!recent.length) return null;
+    let hotCount = 0;
+    let coldCount = 0;
+    for (const w of recent) {
+      if (w > 0) hotCount++;
+      else break;
+    }
+    if (hotCount < 3) {
+      for (const w of recent) {
+        if (w === 0) coldCount++;
+        else break;
+      }
+    }
+    if (hotCount >= 3) return { type: "hot" as const, count: hotCount };
+    if (coldCount >= 3) return { type: "cold" as const, count: coldCount };
+    return null;
+  };
+
+  // Check if #1 is a new topper (wasn't #1 after previous match)
+  const isNewTopper = (() => {
+    if (completedMatches < 2 || sorted.length < 2) return false;
+    const prevTotals = sorted.map((p) => ({
+      name: p.name,
+      prevTotal: p.matchWinnings.slice(0, completedMatches - 1).reduce((s, v) => s + v, 0),
+    })).sort((a, b) => b.prevTotal - a.prevTotal);
+    return prevTotals[0]?.name !== sorted[0]?.name;
+  })();
+
   return (
     <div className="space-y-6">
       <p className="text-center text-sm text-sky-400/70">
@@ -257,12 +288,32 @@ function StandingsTab() {
       <div className="space-y-2">
         {sorted.map((p, i) => {
           const pct = maxReturn > 0 ? (p.total / maxReturn) * 100 : 0;
+          const streak = getStreak(p.matchWinnings, completedMatches);
+          const showNewTopper = i === 0 && isNewTopper;
           return (
-            <div key={p.name} ref={(el) => { rowRefs.current[p.name] = el; }} className="bg-slate-800/40 rounded-lg p-3">
+            <div key={p.name} ref={(el) => { rowRefs.current[p.name] = el; }}
+              className={`rounded-lg p-3 ${showNewTopper
+                ? "bg-gradient-to-r from-yellow-900/30 to-slate-800/40 border border-yellow-500/30 shadow-[0_0_12px_rgba(250,204,21,0.1)]"
+                : "bg-slate-800/40"}`}>
               <div className="flex items-center gap-2 mb-1">
                 {rankBadge(i)}
                 <span className="font-medium text-sky-100 flex-1">{p.name}</span>
-                <span className="text-xs text-slate-400">In-Points: ₹{formatNum(invested)}</span>
+                {showNewTopper && (
+                  <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 rounded-full px-2 py-0.5 animate-pulse">
+                    NEW #1 👑
+                  </span>
+                )}
+                {streak?.type === "hot" && (
+                  <span className="text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full px-2 py-0.5">
+                    🔥 {streak.count}W streak
+                  </span>
+                )}
+                {streak?.type === "cold" && (
+                  <span className="text-[10px] font-bold bg-blue-500/15 text-blue-300/70 border border-blue-500/20 rounded-full px-2 py-0.5">
+                    🧊 {streak.count} dry
+                  </span>
+                )}
+                <span className="text-xs text-slate-400">₹{formatNum(invested)}</span>
               </div>
               <div className="flex items-center text-sm">
                 <span className="text-sky-300 flex-1">₹{formatNum(p.total)}</span>
