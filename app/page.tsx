@@ -173,6 +173,8 @@ function StandingsTab() {
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const prevOrder = useRef<string[]>([]);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiShown = useRef(false);
 
   // Animate rows when order changes
   useEffect(() => {
@@ -215,6 +217,24 @@ function StandingsTab() {
     }
     prevOrder.current = newOrder;
   }, [players, loading, totalInvested]);
+
+  // Confetti: check for new topper
+  useEffect(() => {
+    if (loading || !players.length || completedMatches < 2) return;
+    const invested = totalInvested;
+    const sorted = [...players]
+      .map((p) => ({ ...p, total: p.matchWinnings.reduce((s, v) => s + v, 0) }))
+      .sort((a, b) => b.total - a.total);
+    const prevTotals = [...players]
+      .map((p) => ({ name: p.name, prevTotal: p.matchWinnings.slice(0, completedMatches - 1).reduce((s, v) => s + v, 0) }))
+      .sort((a, b) => b.prevTotal - a.prevTotal);
+    const newTopper = prevTotals[0]?.name !== sorted[0]?.name;
+    if (newTopper && !confettiShown.current) {
+      confettiShown.current = true;
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+    }
+  }, [players, loading, completedMatches, totalInvested]);
 
   if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading standings…</p>;
 
@@ -294,18 +314,6 @@ function StandingsTab() {
       if (prev !== undefined) rankChanges[p.name] = prev - idx; // positive = moved up
     });
   }
-
-  // Confetti state
-  const [showConfetti, setShowConfetti] = useState(false);
-  const confettiShown = useRef(false);
-  useEffect(() => {
-    if (isNewTopper && !confettiShown.current) {
-      confettiShown.current = true;
-      setShowConfetti(true);
-      const timer = setTimeout(() => setShowConfetti(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isNewTopper]);
 
   const confettiColors = ["#facc15", "#38bdf8", "#f472b6", "#4ade80", "#fb923c", "#a78bfa", "#f87171", "#22d3ee"];
   const confettiPieces = showConfetti
