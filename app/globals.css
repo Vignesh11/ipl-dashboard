@@ -15,6 +15,6 @@ body {
 
 .bat-anim {
   display: inline-block;
-  animation: bat-bounce 2s ease-in-out infinite;
+  animation: bat-bounce 2s ease-in-out 2;
   transform-origin: bottom center;
 }

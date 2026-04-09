@@ -171,6 +171,50 @@ function SeasonTab() {
 function StandingsTab() {
   const { players, loading, completedMatches, totalInvested } = useLiveSeasonData();
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevOrder = useRef<string[]>([]);
+
+  // Animate rows when order changes
+  useEffect(() => {
+    if (loading || !players.length) return;
+    const invested = totalInvested;
+    const sorted = [...players]
+      .map((p) => {
+        const total = p.matchWinnings.reduce((s, v) => s + v, 0);
+        return { ...p, total, profit: total - invested };
+      })
+      .sort((a, b) => b.total - a.total);
+    const newOrder = sorted.map((p) => p.name);
+    const prev = prevOrder.current;
+
+    if (prev.length && prev.join(",") !== newOrder.join(",")) {
+      // Calculate position deltas and animate
+      const positions: Record<string, number> = {};
+      for (const name of prev) {
+        const el = rowRefs.current[name];
+        if (el) positions[name] = el.getBoundingClientRect().top;
+      }
+      // After React re-renders, apply FLIP animation
+      requestAnimationFrame(() => {
+        for (const name of newOrder) {
+          const el = rowRefs.current[name];
+          if (el && positions[name] !== undefined) {
+            const newTop = el.getBoundingClientRect().top;
+            const delta = positions[name] - newTop;
+            if (Math.abs(delta) > 1) {
+              el.style.transition = "none";
+              el.style.transform = `translateY(${delta}px)`;
+              requestAnimationFrame(() => {
+                el.style.transition = "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)";
+                el.style.transform = "translateY(0)";
+              });
+            }
+          }
+        }
+      });
+    }
+    prevOrder.current = newOrder;
+  }, [players, loading, totalInvested]);
 
   if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading standings…</p>;
 
@@ -214,7 +258,7 @@ function StandingsTab() {
         {sorted.map((p, i) => {
           const pct = maxReturn > 0 ? (p.total / maxReturn) * 100 : 0;
           return (
-            <div key={p.name} className="bg-slate-800/40 rounded-lg p-3">
+            <div key={p.name} ref={(el) => { rowRefs.current[p.name] = el; }} className="bg-slate-800/40 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
                 {rankBadge(i)}
                 <span className="font-medium text-sky-100 flex-1">{p.name}</span>
