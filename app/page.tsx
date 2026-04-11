@@ -41,8 +41,11 @@ function SeasonTab() {
   const { matches, loading } = useLiveMatches();
   const highlightRef = useRef<HTMLDivElement>(null);
 
-  const today = new Date().toISOString().split("T")[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  // Use local date (not UTC) so IST matches correctly
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const tmrw = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const tomorrow = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, "0")}-${String(tmrw.getDate()).padStart(2, "0")}`;
 
   useEffect(() => {
     if (!loading && highlightRef.current) {
@@ -57,11 +60,23 @@ function SeasonTab() {
 
   const todaysGames = matches.filter((m) => m.matchDate === today);
   const tomorrowsGames = matches.filter(
-    (m) => m.matchDate === tomorrow && !hasWinners(m) && (m.contestCode || m.contestLink),
+    (m) => m.matchDate === tomorrow && !hasWinners(m),
   );
   const completedGames = matches
     .filter((m) => hasWinners(m) && m.matchDate !== today)
     .reverse();
+  const upcomingGames = matches.filter(
+    (m) => !hasWinners(m) && m.matchDate !== today && m.matchDate !== tomorrow && m.matchDate >= today,
+  );
+
+  // Catch-all: matches that don't appear in any section above (e.g. missing matchDate, future without winners, etc.)
+  const shownMatchNums = new Set([
+    ...todaysGames.map((m) => m.matchNum),
+    ...tomorrowsGames.map((m) => m.matchNum),
+    ...completedGames.map((m) => m.matchNum),
+    ...upcomingGames.map((m) => m.matchNum),
+  ]);
+  const unlistedGames = matches.filter((m) => !shownMatchNums.has(m.matchNum) && !hasWinners(m));
 
   const renderWinners = (m: { winnings: Record<string, number> }) => {
     const winners = PLAYER_LIST
@@ -137,6 +152,59 @@ function SeasonTab() {
                   )}
                   <span className="text-xs text-blue-300/50">Upcoming</span>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming (beyond tomorrow) */}
+      {upcomingGames.length > 0 && (
+        <div>
+          <h3 className="text-indigo-300/80 font-semibold mb-2">Upcoming</h3>
+          <div className="space-y-2">
+            {upcomingGames.map((m) => (
+              <div
+                key={m.matchNum}
+                className="rounded-lg border border-indigo-500/20 bg-indigo-950/15 p-3"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-indigo-100/80">M{m.matchNum}: {m.matchInfo}</span>
+                  <span className="text-xs text-indigo-400/50">{m.matchDate}</span>
+                </div>
+                {(m.contestCode || m.contestLink) && (
+                  <div className="flex items-center gap-2 mt-1">
+                    {m.contestCode && <span className="text-xs bg-indigo-800/30 text-indigo-300 px-2 py-0.5 rounded font-mono">Code: {m.contestCode}</span>}
+                    {m.contestLink && <a href={m.contestLink} target="_blank" rel="noreferrer" className="text-xs text-indigo-400/70 underline">Contest ↗</a>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Unlisted (missing date or other edge cases) */}
+      {unlistedGames.length > 0 && (
+        <div>
+          <h3 className="text-amber-300/80 font-semibold mb-2">📋 Scheduled</h3>
+          <div className="space-y-2">
+            {unlistedGames.map((m) => (
+              <div
+                key={m.matchNum}
+                className="rounded-lg border border-amber-500/20 bg-amber-950/10 p-3"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-amber-100/80">M{m.matchNum}: {m.matchInfo || "TBD"}</span>
+                  <span className="text-xs text-amber-400/50">{m.matchDate || "No date"}</span>
+                </div>
+                {(m.contestCode || m.contestLink) && (
+                  <div className="flex items-center gap-2 mt-1">
+                    {m.contestCode && <span className="text-xs bg-amber-800/30 text-amber-300 px-2 py-0.5 rounded font-mono">Code: {m.contestCode}</span>}
+                    {m.contestLink && <a href={m.contestLink} target="_blank" rel="noreferrer" className="text-xs text-amber-400/70 underline">Contest ↗</a>}
+                  </div>
+                )}
+                <span className="text-sky-400/60 text-sm">⏳ Awaiting results...</span>
               </div>
             ))}
           </div>
