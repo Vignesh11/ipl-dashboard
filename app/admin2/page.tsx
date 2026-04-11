@@ -13,21 +13,14 @@ const PLAYERS = [
 
 type Result = "skip" | "correct" | "twist_correct" | "twist_wrong";
 
-const RESULT_CONFIG: Record<Result, { label: string; emoji: string; points: number; color: string; activeColor: string }> = {
-  skip: { label: "Wrong/Skip", emoji: "⬜", points: 0, color: "text-slate-500", activeColor: "bg-slate-700/40 border-slate-500/30 text-slate-300" },
-  correct: { label: "+100", emoji: "✅", points: 100, color: "text-emerald-400", activeColor: "bg-emerald-900/40 border-emerald-500/30 text-emerald-300" },
-  twist_correct: { label: "🌀 +200", emoji: "🌀✅", points: 200, color: "text-yellow-400", activeColor: "bg-yellow-900/30 border-yellow-500/30 text-yellow-300" },
-  twist_wrong: { label: "🌀 -100", emoji: "❌", points: -100, color: "text-red-400", activeColor: "bg-red-900/30 border-red-500/30 text-red-300" },
-};
-
 export default function Admin2Page() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [scores, setScores] = useState<Record<string, number>>({});
-  const [results, setResults] = useState<Record<string, Result>>(() => {
-    const init: Record<string, Result> = {};
-    PLAYERS.forEach((p) => (init[p] = "skip"));
+  const [customPoints, setCustomPoints] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    PLAYERS.forEach((p) => (init[p] = 0));
     return init;
   });
   const [saving, setSaving] = useState(false);
@@ -87,24 +80,19 @@ export default function Admin2Page() {
   }
 
   // Calculate total points for this round
-  const roundSummary = PLAYERS.map((p) => ({
-    name: p,
-    result: results[p],
-    points: RESULT_CONFIG[results[p]].points,
-  }));
-  const totalAwarded = roundSummary.reduce((s, r) => s + (r.points > 0 ? r.points : 0), 0);
-  const totalDeducted = roundSummary.reduce((s, r) => s + (r.points < 0 ? r.points : 0), 0);
+  const totalAwarded = PLAYERS.reduce((s, p) => s + (customPoints[p] > 0 ? customPoints[p] : 0), 0);
+  const totalDeducted = PLAYERS.reduce((s, p) => s + (customPoints[p] < 0 ? customPoints[p] : 0), 0);
 
   async function handleSave() {
-    const hasAny = PLAYERS.some((p) => results[p] !== "skip");
-    if (!hasAny) { setMessage("Set at least one result"); return; }
+    const hasAny = PLAYERS.some((p) => customPoints[p] !== 0);
+    if (!hasAny) { setMessage("Set at least one player's points"); return; }
     setSaving(true);
     setMessage("");
     try {
       const updated = { ...scores };
       PLAYERS.forEach((p) => {
         if (!updated[p]) updated[p] = 0;
-        updated[p] += RESULT_CONFIG[results[p]].points;
+        updated[p] += customPoints[p];
       });
 
       await setDoc(doc(db, "guessGame", "scores"), { points: updated });
@@ -113,18 +101,21 @@ export default function Admin2Page() {
       await setDoc(histRef, {
         matchNum,
         date: matchDate,
-        results: Object.fromEntries(PLAYERS.map((p) => [p, { result: results[p], points: RESULT_CONFIG[results[p]].points }])),
+        results: Object.fromEntries(PLAYERS.map((p) => [p, {
+          result: customPoints[p] > 0 ? "correct" : customPoints[p] < 0 ? "twist_wrong" : "skip",
+          points: customPoints[p],
+        }])),
         timestamp: new Date().toISOString(),
       });
 
-      const winners = PLAYERS.filter((p) => results[p] === "correct" || results[p] === "twist_correct");
-      const twisters = PLAYERS.filter((p) => results[p] === "twist_wrong");
-      setMessage(`✅ M${matchNum}: ${winners.length} correct${twisters.length > 0 ? `, ${twisters.length} twist fails` : ""}`);
+      const winners = PLAYERS.filter((p) => customPoints[p] > 0);
+      const losers = PLAYERS.filter((p) => customPoints[p] < 0);
+      setMessage(`✅ M${matchNum}: ${winners.length} gained${losers.length > 0 ? `, ${losers.length} lost` : ""}`);
 
       // Reset for next round
-      const reset: Record<string, Result> = {};
-      PLAYERS.forEach((p) => (reset[p] = "skip"));
-      setResults(reset);
+      const reset: Record<string, number> = {};
+      PLAYERS.forEach((p) => (reset[p] = 0));
+      setCustomPoints(reset);
       setMatchNum((n) => n + 1);
     } catch (err) {
       setMessage(`❌ Error: ${err}`);
@@ -158,45 +149,59 @@ export default function Admin2Page() {
           </div>
         </div>
 
-        {/* Scoring legend */}
+        {/* Quick-set buttons legend */}
         <div className="flex flex-wrap gap-2 justify-center mb-4 text-xs">
-          {(Object.keys(RESULT_CONFIG) as Result[]).map((r) => (
-            <span key={r} className={`px-2 py-1 rounded ${RESULT_CONFIG[r].color}`}>
-              {RESULT_CONFIG[r].emoji} {RESULT_CONFIG[r].label}
-            </span>
-          ))}
+          <span className="px-2 py-1 rounded text-slate-500">⬜ 0</span>
+          <span className="px-2 py-1 rounded text-emerald-400">✅ +100</span>
+          <span className="px-2 py-1 rounded text-yellow-400">🌀✅ +200</span>
+          <span className="px-2 py-1 rounded text-red-400">❌ -100</span>
+          <span className="px-2 py-1 rounded text-sky-400">✏️ Custom</span>
         </div>
 
         {/* Player results */}
         <div className="bg-blue-950/40 border border-blue-800/25 rounded-xl overflow-hidden mb-4">
           <div className="px-4 py-2 bg-blue-900/25 border-b border-blue-800/25 flex items-center justify-between">
-            <span className="text-xs font-bold text-sky-400 uppercase">Player Results</span>
+            <span className="text-xs font-bold text-sky-400 uppercase">Player Points</span>
             <span className="text-xs text-blue-400/50">
               +{totalAwarded} / {totalDeducted}
             </span>
           </div>
-          {PLAYERS.map((player) => (
-            <div key={player} className={`px-3 py-2 border-b border-blue-900/15 ${results[player] !== "skip" ? "bg-blue-900/10" : ""}`}>
-              <div className="flex items-center justify-between mb-1">
-                <span className={`text-sm ${results[player] !== "skip" ? "text-blue-100 font-semibold" : "text-blue-300/50"}`}>
-                  {RESULT_CONFIG[results[player]].emoji} {player}
-                </span>
-                <span className={`text-xs font-mono ${RESULT_CONFIG[results[player]].color}`}>
-                  {scores[player] || 0} pts
-                </span>
+          {PLAYERS.map((player) => {
+            const pts = customPoints[player];
+            return (
+              <div key={player} className={`px-3 py-2 border-b border-blue-900/15 ${pts !== 0 ? "bg-blue-900/10" : ""}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-sm ${pts !== 0 ? "text-blue-100 font-semibold" : "text-blue-300/50"}`}>
+                    {pts > 0 ? "✅" : pts < 0 ? "❌" : "⬜"} {player}
+                  </span>
+                  <span className={`text-xs font-mono ${pts > 0 ? "text-emerald-400" : pts < 0 ? "text-red-400" : "text-slate-500"}`}>
+                    {scores[player] || 0} pts
+                  </span>
+                </div>
+                <div className="flex gap-1 items-center">
+                  {[0, 100, 200, -100].map((v) => (
+                    <button key={v} onClick={() => setCustomPoints({ ...customPoints, [player]: v })}
+                      className={`px-2 py-1 text-[10px] rounded border transition-all ${
+                        pts === v
+                          ? v > 0 ? "bg-emerald-900/40 border-emerald-500/30 text-emerald-300"
+                            : v < 0 ? "bg-red-900/30 border-red-500/30 text-red-300"
+                            : "bg-slate-700/40 border-slate-500/30 text-slate-300"
+                          : "bg-blue-900/10 border-blue-800/15 text-blue-500/30 hover:bg-blue-800/20"
+                      }`}>
+                      {v === 0 ? "0" : v > 0 ? `+${v}` : `${v}`}
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    value={pts || ""}
+                    onChange={(e) => setCustomPoints({ ...customPoints, [player]: parseInt(e.target.value) || 0 })}
+                    placeholder="Custom"
+                    className="w-20 px-2 py-1 text-xs bg-blue-900/20 border border-blue-700/20 rounded text-blue-100 text-right placeholder-blue-600/30"
+                  />
+                </div>
               </div>
-              <div className="flex gap-1">
-                {(Object.keys(RESULT_CONFIG) as Result[]).map((r) => (
-                  <button key={r} onClick={() => setResults({ ...results, [player]: r })}
-                    className={`flex-1 px-1 py-1 text-[10px] rounded border transition-all ${
-                      results[player] === r ? RESULT_CONFIG[r].activeColor : "bg-blue-900/10 border-blue-800/15 text-blue-500/30 hover:bg-blue-800/20"
-                    }`}>
-                    {RESULT_CONFIG[r].emoji} {RESULT_CONFIG[r].label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Save */}
