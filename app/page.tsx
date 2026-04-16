@@ -827,6 +827,33 @@ function GuessGameTab() {
           )}
         </div>
       </div>
+
+      {/* Wall of Shame — negative point holders */}
+      {(() => {
+        const shamed = sorted.filter((p) => p.points < 0).sort((a, b) => a.points - b.points);
+        if (!shamed.length) return null;
+        return (
+          <div className="mt-2">
+            <h4 className="text-xs font-bold text-red-400 uppercase mb-2 flex items-center gap-1">
+              💀 Wall of Shame
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {shamed.map((p) => (
+                <div key={p.name} className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-950/30 border border-red-500/20">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.seed}&backgroundColor=b6e3f4,c0aede`} alt={p.name}
+                    className="w-7 h-7 rounded-full bg-slate-700 shrink-0 grayscale opacity-60" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-red-200 block truncate">{p.name}</span>
+                    <span className="text-xs font-bold text-red-400">{p.points} PTS</span>
+                  </div>
+                  <span className="text-lg">💀</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
