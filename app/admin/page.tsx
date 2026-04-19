@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 
 const ADMIN_PASSWORD = "bawa2026";
 
@@ -46,6 +46,7 @@ export default function AdminPage() {
   const [message, setMessage] = useState("");
   const [existingMatches, setExistingMatches] = useState<MatchData[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   useEffect(() => {
     if (!authed) return;
@@ -119,6 +120,20 @@ export default function AdminPage() {
         updatedAt: new Date().toISOString(),
       });
       setMessage(`Match ${matchNum} saved!`);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setMessage(`Error: ${err}`);
+    }
+    setSaving(false);
+  }
+
+  async function handleDelete(matchNumber: number) {
+    setSaving(true);
+    setMessage("");
+    try {
+      await deleteDoc(doc(db, "matches", `match_${matchNumber}`));
+      setMessage(`Match ${matchNumber} deleted.`);
+      setDeleteConfirm(null);
       setRefreshKey((k) => k + 1);
     } catch (err) {
       setMessage(`Error: ${err}`);
@@ -264,13 +279,34 @@ export default function AdminPage() {
               const mWinners = PLAYERS.filter((p) => (m.winnings?.[p] || 0) > 0)
                 .sort((a, b) => (m.winnings[b] || 0) - (m.winnings[a] || 0));
               return (
-                <div key={m.matchNum} onClick={() => setMatchNum(m.matchNum)}
-                  className="px-4 py-3 border-b border-blue-900/15 hover:bg-blue-900/10 cursor-pointer">
+                <div key={m.matchNum} className="px-4 py-3 border-b border-blue-900/15 hover:bg-blue-900/10">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold text-blue-200">M{m.matchNum} {m.matchInfo && `— ${m.matchInfo}`}</span>
-                    <span className="text-xs text-blue-400/40">₹{m.betAmount}</span>
+                    <span onClick={() => setMatchNum(m.matchNum)} className="text-sm font-semibold text-blue-200 cursor-pointer flex-1">
+                      M{m.matchNum} {m.matchInfo && `— ${m.matchInfo}`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-blue-400/40">₹{m.betAmount}</span>
+                      {deleteConfirm === m.matchNum ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-red-400">Delete?</span>
+                          <button onClick={() => handleDelete(m.matchNum)} disabled={saving}
+                            className="px-2 py-0.5 text-xs bg-red-600 hover:bg-red-500 text-white rounded transition-colors">
+                            Yes
+                          </button>
+                          <button onClick={() => setDeleteConfirm(null)}
+                            className="px-2 py-0.5 text-xs bg-blue-700/40 hover:bg-blue-600/40 text-blue-300 rounded transition-colors">
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteConfirm(m.matchNum)}
+                          className="px-2 py-0.5 text-xs bg-red-900/30 hover:bg-red-800/40 text-red-400 rounded border border-red-800/20 transition-colors">
+                          🗑
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1" onClick={() => setMatchNum(m.matchNum)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setMatchNum(m.matchNum)}>
                     {mWinners.map((w) => (
                       <span key={w} className="text-xs bg-emerald-900/30 text-emerald-300 px-2 py-0.5 rounded-full">
                         {w}: ₹{m.winnings[w]}
