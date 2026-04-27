@@ -11,6 +11,7 @@ interface MatchDoc {
   matchInfo: string;
   betAmount: number;
   winnings: Record<string, number>;
+  cancelled?: boolean;
 }
 
 interface Change {
@@ -54,8 +55,8 @@ export default function MigratePage() {
         c.push(`betAmount: 3200 → 3000`);
       }
 
-      // 3. Find 4th place (₹200) and set to 0
-      if (m.winnings) {
+      // 3. Find 4th place (₹200) and set to 0 — skip cancelled/rained-out matches
+      if (m.winnings && !m.cancelled) {
         const sorted = Object.entries(m.winnings)
           .filter(([, v]) => v > 0)
           .sort(([, a], [, b]) => b - a);
@@ -101,15 +102,17 @@ export default function MigratePage() {
         needsUpdate = true;
       }
 
-      // 3. Fix 4th place ₹200 → ₹0
-      const winnings = (updates["winnings"] as Record<string, number>) || { ...m.winnings };
-      const sorted = Object.entries(winnings)
-        .filter(([, v]) => v > 0)
-        .sort(([, a], [, b]) => b - a);
-      if (sorted.length >= 4 && sorted[3][1] === 200) {
-        winnings[sorted[3][0]] = 0;
-        updates["winnings"] = winnings;
-        needsUpdate = true;
+      // 3. Fix 4th place ₹200 → ₹0 — skip cancelled/rained-out matches
+      if (!m.cancelled) {
+        const winnings = (updates["winnings"] as Record<string, number>) || { ...m.winnings };
+        const sorted = Object.entries(winnings)
+          .filter(([, v]) => v > 0)
+          .sort(([, a], [, b]) => b - a);
+        if (sorted.length >= 4 && sorted[3][1] === 200) {
+          winnings[sorted[3][0]] = 0;
+          updates["winnings"] = winnings;
+          needsUpdate = true;
+        }
       }
 
       if (needsUpdate) {
