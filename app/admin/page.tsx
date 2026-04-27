@@ -23,6 +23,7 @@ interface MatchData {
   winners: string[];
   winnings: Record<string, number>;
   updatedAt: string;
+  cancelled?: boolean;
 }
 
 function initWinnings(): Record<string, number> {
@@ -276,8 +277,11 @@ export default function AdminPage() {
               <span className="text-xs font-bold text-sky-400 uppercase">Match History</span>
             </div>
             {existingMatches.map((m) => {
-              const mWinners = PLAYERS.filter((p) => (m.winnings?.[p] || 0) > 0)
+              const paidWinners = PLAYERS.filter((p) => (m.winnings?.[p] || 0) > 0)
                 .sort((a, b) => (m.winnings[b] || 0) - (m.winnings[a] || 0));
+              const medalOnly = (m.winners || [])
+                .filter((name) => PLAYERS.includes(name) && (m.winnings?.[name] || 0) === 0);
+              const mWinners = [...paidWinners, ...medalOnly];
               return (
                 <div key={m.matchNum} className="px-4 py-3 border-b border-blue-900/15 hover:bg-blue-900/10">
                   <div className="flex items-center justify-between mb-1">
@@ -309,7 +313,7 @@ export default function AdminPage() {
                   <div className="flex flex-wrap gap-1" onClick={() => setMatchNum(m.matchNum)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setMatchNum(m.matchNum)}>
                     {mWinners.map((w) => (
                       <span key={w} className="text-xs bg-emerald-900/30 text-emerald-300 px-2 py-0.5 rounded-full">
-                        {w}: ₹{m.winnings[w]}
+                        {(m.winnings?.[w] || 0) > 0 ? `${w}: ₹${m.winnings[w]}` : `🎖️ ${w}`}
                       </span>
                     ))}
                     {mWinners.length === 0 && <span className="text-xs text-blue-500/30">No winners set</span>}

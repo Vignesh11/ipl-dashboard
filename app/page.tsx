@@ -78,17 +78,23 @@ function SeasonTab() {
   ]);
   const unlistedGames = matches.filter((m) => !shownMatchNums.has(m.matchNum) && !hasWinners(m));
 
-  const renderWinners = (m: { winnings: Record<string, number> }) => {
-    const winners = PLAYER_LIST
+  const renderWinners = (m: { winnings: Record<string, number>; winners?: string[] }) => {
+    // Players with prize money
+    const paidWinners = PLAYER_LIST
       .map((p) => ({ name: p, amt: m.winnings?.[p] ?? 0 }))
       .filter((w) => w.amt > 0)
       .sort((a, b) => b.amt - a.amt);
-    if (!winners.length) return <span className="text-sky-400/60 text-sm">⏳ Awaiting results...</span>;
+    // 4th place: in winners array but ₹0 winnings (medal only)
+    const medalOnly = (m.winners || [])
+      .filter((name) => PLAYER_LIST.includes(name) && (m.winnings?.[name] ?? 0) === 0)
+      .map((name) => ({ name, amt: 0 }));
+    const allWinners = [...paidWinners, ...medalOnly];
+    if (!allWinners.length) return <span className="text-sky-400/60 text-sm">⏳ Awaiting results...</span>;
     return (
       <div className="flex flex-wrap gap-1 mt-1">
-        {winners.map((w) => (
+        {allWinners.map((w) => (
           <span key={w.name} className="text-xs bg-sky-900/40 rounded px-1.5 py-0.5">
-            {getPrizeEmoji(w.amt)} {w.name} ₹{formatNum(w.amt)}
+            {w.amt > 0 ? `${getPrizeEmoji(w.amt)} ${w.name} ₹${formatNum(w.amt)}` : `🎖️ ${w.name}`}
           </span>
         ))}
       </div>
