@@ -764,8 +764,8 @@ function GuessGameTab() {
   if (loading) return <p className="text-center text-sky-300 py-12 animate-pulse">Loading…</p>;
 
   const GUESS_PLAYERS = [
-    "Shiva", "Aditya", "Ankit", "Varun", "Harsha", "Manju",
-    "Ravi", "Rohit", "Siddhu", "Sivakarthik", "Sugam", "Vinay",
+    "Shiva", "Aditya", "Ankit", "Harsha", "Manju",
+    "Ravi", "Siddhu", "Sivakarthik", "Vinay",
     "Ranjeeth", "Sreeram", "Vignesh", "Pruthvi", "Jay",
   ];
 
