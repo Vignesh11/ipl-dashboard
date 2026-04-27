@@ -570,16 +570,23 @@ function MedalsTab() {
     matches.forEach((m) => {
       if (m.cancelled) return; // skip rain-outs / cancelled matches
       const amt = m.winnings?.[name] || 0;
-      if (amt <= 0) return;
+      const isInWinners = (m.winners || []).includes(name);
+      // Player qualifies if they have prize money OR are in the winners array (4th place medal-only)
+      if (amt <= 0 && !isInWinners) return;
       // Get all unique non-zero amounts for this match, sorted descending
       const allAmounts = [...new Set(
         PLAYER_LIST.map((p) => m.winnings?.[p] || 0).filter((v) => v > 0)
       )].sort((a, b) => b - a);
-      const rank = allAmounts.indexOf(amt);
-      if (rank === 0) gold++;
-      else if (rank === 1) silver++;
-      else if (rank === 2) bronze++;
-      else consolation++;
+      if (amt > 0) {
+        const rank = allAmounts.indexOf(amt);
+        if (rank === 0) gold++;
+        else if (rank === 1) silver++;
+        else if (rank === 2) bronze++;
+        else consolation++;
+      } else if (isInWinners) {
+        // 4th place: in winners array but ₹0 winnings = consolation medal
+        consolation++;
+      }
     });
     return { name, gold, silver, bronze, consolation, total: gold + silver + bronze + consolation };
   });
