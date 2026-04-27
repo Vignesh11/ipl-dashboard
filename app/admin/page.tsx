@@ -48,6 +48,7 @@ export default function AdminPage() {
   const [existingMatches, setExistingMatches] = useState<MatchData[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [medalOnly, setMedalOnly] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!authed) return;
@@ -70,6 +71,10 @@ export default function AdminPage() {
         setContestCode(data.contestCode || "");
         setWinnings(data.winnings || initWinnings());
         setCancelled(!!(data as MatchData & { cancelled?: boolean }).cancelled);
+        // Restore medal-only players: in winners array but with ₹0 winnings
+        const w = data.winners || [];
+        const win = data.winnings || {};
+        setMedalOnly(new Set(w.filter((p: string) => (win[p] || 0) === 0)));
       } else {
         setMatchDate("");
         setMatchInfo("");
@@ -78,6 +83,7 @@ export default function AdminPage() {
         setContestCode("");
         setWinnings(initWinnings());
         setCancelled(false);
+        setMedalOnly(new Set());
       }
     });
   }, [matchNum, authed]);
@@ -100,7 +106,10 @@ export default function AdminPage() {
   }
 
   const totalAwarded = Object.values(winnings).reduce((a, b) => a + b, 0);
-  const winners = PLAYERS.filter((p) => winnings[p] > 0);
+  const winners = [
+    ...PLAYERS.filter((p) => winnings[p] > 0),
+    ...Array.from(medalOnly).filter((p) => winnings[p] === 0),
+  ];
 
   function handleRainRefund() {
     const refundPerPlayer = Math.floor(betAmount / PLAYERS.length);
@@ -240,15 +249,23 @@ export default function AdminPage() {
               </span>
               <div className="flex items-center gap-1">
                 {PRIZE_OPTIONS.map((amt) => (
-                  <button key={amt} onClick={() => setWinnings({ ...winnings, [player]: amt })}
+                  <button key={amt} onClick={() => { setWinnings({ ...winnings, [player]: amt }); if (amt > 0) { const s = new Set(medalOnly); s.delete(player); setMedalOnly(s); } }}
                     className={`px-2 py-1 text-xs rounded transition-all ${
-                      winnings[player] === amt
+                      winnings[player] === amt && !medalOnly.has(player)
                         ? amt > 0 ? "bg-emerald-600 text-white font-bold" : "bg-blue-700/40 text-blue-300"
                         : "bg-blue-900/20 text-blue-400/40 hover:bg-blue-800/30"
                     }`}>
                     {amt === 0 ? "–" : `₹${amt}`}
                   </button>
                 ))}
+                <button onClick={() => { setWinnings({ ...winnings, [player]: 0 }); setMedalOnly(new Set(medalOnly).add(player)); }}
+                  className={`px-2 py-1 text-xs rounded transition-all ${
+                    medalOnly.has(player)
+                      ? "bg-amber-600 text-white font-bold"
+                      : "bg-blue-900/20 text-blue-400/40 hover:bg-blue-800/30"
+                  }`}>
+                  🎖️
+                </button>
                 <input type="number" min={0} step={100}
                   value={winnings[player] || ""}
                   onChange={(e) => setWinnings({ ...winnings, [player]: parseInt(e.target.value) || 0 })}
