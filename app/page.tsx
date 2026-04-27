@@ -15,7 +15,7 @@ const TABS = ["🏏 Season 2026", "📊 Standings 2026", "🏅 Medals 2026", "�
 const PLAYER_LIST = [
   "Harsha","Vignesh","Sidhu","Jaydev","Aditya","Karthik",
   "Sreeram","Manju","Anoop","Ravindra","Ankit","Prithvi",
-  "Ranjith","Shashi","Shiva","Vinay (Babu)",
+  "Ranjith","Shiva","Vinay (Babu)",
 ];
 
 const COLORS = [

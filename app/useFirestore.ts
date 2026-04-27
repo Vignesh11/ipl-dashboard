@@ -11,7 +11,7 @@ export interface PlayerLive {
 const PLAYERS = [
   "Harsha", "Vignesh", "Sidhu", "Jaydev", "Aditya", "Karthik",
   "Sreeram", "Manju", "Anoop", "Ravindra", "Ankit", "Prithvi",
-  "Ranjith", "Shashi", "Shiva", "Vinay (Babu)",
+  "Ranjith", "Shiva", "Vinay (Babu)",
 ];
 
 export function useLiveSeasonData() {

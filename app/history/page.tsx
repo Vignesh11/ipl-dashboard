@@ -6,7 +6,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 const PLAYERS = [
   "Harsha", "Vignesh", "Sidhu", "Jaydev", "Aditya", "Karthik",
   "Sreeram", "Manju", "Anoop", "Ravindra", "Ankit", "Prithvi",
-  "Ranjith", "Shashi", "Shiva", "Vinay (Babu)",
+  "Ranjith", "Shiva", "Vinay (Babu)",
 ];
 
 interface MatchData {

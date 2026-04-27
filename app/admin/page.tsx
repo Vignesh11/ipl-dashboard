@@ -7,11 +7,11 @@ const ADMIN_PASSWORD = "bawa2026";
 
 const PLAYERS = [
   "Aditya", "Ankit", "Anoop", "Harsha", "Jaydev", "Karthik",
-  "Manju", "Prithvi", "Ranjith", "Ravindra", "Shashi", "Shiva",
+  "Manju", "Prithvi", "Ranjith", "Ravindra", "Shiva",
   "Sidhu", "Sreeram", "Vignesh", "Vinay (Babu)",
 ];
 
-const PRIZE_OPTIONS = [0, 200, 400, 500, 1000, 1500, 2000, 3000];
+const PRIZE_OPTIONS = [0, 500, 1000, 1500];
 
 interface MatchData {
   matchNum: number;
@@ -37,7 +37,7 @@ export default function AdminPage() {
   const [matchNum, setMatchNum] = useState(0);
   const [matchDate, setMatchDate] = useState("");
   const [matchInfo, setMatchInfo] = useState("");
-  const [betAmount, setBetAmount] = useState(3200);
+  const [betAmount, setBetAmount] = useState(3000);
   const [contestLink, setContestLink] = useState("");
   const [contestCode, setContestCode] = useState("");
   const [winnings, setWinnings] = useState<Record<string, number>>(initWinnings);
@@ -64,7 +64,7 @@ export default function AdminPage() {
         const data = snap.data() as MatchData;
         setMatchDate(data.matchDate || new Date().toISOString().split("T")[0]);
         setMatchInfo(data.matchInfo || "");
-        setBetAmount(data.betAmount || 3200);
+        setBetAmount(data.betAmount || 3000);
         setContestLink(data.contestLink || "");
         setContestCode(data.contestCode || "");
         setWinnings(data.winnings || initWinnings());
@@ -72,7 +72,7 @@ export default function AdminPage() {
       } else {
         setMatchDate("");
         setMatchInfo("");
-        setBetAmount(3200);
+        setBetAmount(3000);
         setContestLink("");
         setContestCode("");
         setWinnings(initWinnings());

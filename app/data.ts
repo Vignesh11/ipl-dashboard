@@ -23,7 +23,6 @@ export const currentSeason: PlayerSeason[] = [
   { name: "Ankit", returnPct: -96.7, inPoints: 15000, outPoints: 500, uptoNow: -700, balance: -14500, matchWinnings: [500, 0, 0, 0, 0, 0] },
   { name: "Prithvi", returnPct: -98.7, inPoints: 15000, outPoints: 200, uptoNow: -1000, balance: -14800, matchWinnings: [0, 0, 0, 0, 0, 200] },
   { name: "Ranjith", returnPct: -100, inPoints: 15000, outPoints: 0, uptoNow: -1200, balance: -15000, matchWinnings: [0, 0, 0, 0, 0, 0] },
-  { name: "Shashi", returnPct: -100, inPoints: 15000, outPoints: 0, uptoNow: -1200, balance: -15000, matchWinnings: [0, 0, 0, 0, 0, 0] },
   { name: "Shiva", returnPct: -100, inPoints: 15000, outPoints: 0, uptoNow: -1200, balance: -15000, matchWinnings: [0, 0, 0, 0, 0, 0] },
   { name: "Vinay (Babu)", returnPct: -100, inPoints: 15000, outPoints: 0, uptoNow: -1200, balance: -15000, matchWinnings: [0, 0, 0, 0, 0, 0] },
 ];
@@ -52,7 +51,6 @@ export const medalTable: MedalEntry[] = [
   { name: "Ankit", gold: 0, silver: 0, bronze: 1, consolation: 0, total: 1 },
   { name: "Prithvi", gold: 0, silver: 0, bronze: 0, consolation: 1, total: 1 },
   { name: "Ranjith", gold: 0, silver: 0, bronze: 0, consolation: 0, total: 0 },
-  { name: "Shashi", gold: 0, silver: 0, bronze: 0, consolation: 0, total: 0 },
   { name: "Shiva", gold: 0, silver: 0, bronze: 0, consolation: 0, total: 0 },
   { name: "Vinay (Babu)", gold: 0, silver: 0, bronze: 0, consolation: 0, total: 0 },
 ];
