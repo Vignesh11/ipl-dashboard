@@ -7,8 +7,8 @@ const ADMIN_PASSWORD = "silv2026";
 
 const PLAYERS = [
   "Aditya", "Ankit", "Harsha", "Jay", "Manju", "Pruthvi",
-  "Ranjeeth", "Ravi", "Rohit", "Siddhu", "Sivakarthik", "Sreeram",
-  "Sugam", "Varun", "Vignesh", "Vinay", "Shiva",
+  "Ranjeeth", "Ravi", "Siddhu", "Sivakarthik", "Sreeram",
+  "Vignesh", "Vinay", "Shiva",
 ];
 
 type Result = "skip" | "correct" | "twist_correct" | "twist_wrong";
